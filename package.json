@@ -1,0 +1,36 @@
+{
+  "name": "citadel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@alch/alchemy-web3": "^1.1.9",
+    "@openzeppelin/contracts": "^4.4.1",
+    "@openzeppelin/contracts-upgradeable": "^4.4.1",
+    "dotenv": "^10.0.0",
+    "truffle-flattener": "^1.6.0",
+    "xterm": "^4.16.0"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.3",
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@openzeppelin/contracts-ethereum-package": "^3.0.0",
+    "@openzeppelin/hardhat-upgrades": "^1.12.0",
+    "@openzeppelin/test-helpers": "^0.5.15",
+    "@openzeppelin/upgrades": "^2.8.0",
+    "chai": "^4.3.6",
+    "erc721a": "^3.3.0",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.5.4",
+    "file-system": "^2.2.2",
+    "hardhat": "^2.8.0",
+    "hardhat-gas-reporter": "^1.0.6",
+    "keccak256": "1.0.6",
+    "merkletreejs": "0.2.31"
+  }
+}

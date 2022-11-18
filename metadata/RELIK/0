@@ -1,0 +1,36 @@
+{
+  "name": "CITADEL RELIK",
+  "description": "CITADEL RELIK",
+  "tokenId": 1,
+  "image": "https://gateway.pinata.cloud/ipfs/QmaS9m52iVmcjbKWyZ3XofQmVJRZoaV6bMwyrRsrqYGntJ/RELIK1.png",
+  "attributes": [
+    {
+      "trait_type": "GEN",
+      "value": "0"
+    },
+    {
+      "trait_type": "SEKT",
+      "value": "ELEKT"
+    },
+    {
+      "trait_type": "SHIELD",
+      "value": "DAG SGIATH"
+    },
+    {
+      "trait_type": "ENGINE",
+      "value": "FULTACHT MAK"
+    },
+    {
+      "trait_type": "WEAPON SYSTEM",
+      "value": "TELUM RATIO"
+    },
+    {
+      "trait_type": "GATE",
+      "value": "स्फूरतिमात्रो"
+    },
+    {
+      "trait_type": "INVASION",
+      "value": "DRACHEN"
+    }
+  ]
+}

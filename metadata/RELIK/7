@@ -1,0 +1,36 @@
+{
+  "name": "CITADEL RELIK",
+  "description": "CITADEL RELIK",
+  "tokenId": 8,
+  "image": "https://gateway.pinata.cloud/ipfs/QmaS9m52iVmcjbKWyZ3XofQmVJRZoaV6bMwyrRsrqYGntJ/RELIK8.png",
+  "attributes": [
+    {
+      "trait_type": "GEN",
+      "value": "0"
+    },
+    {
+      "trait_type": "SEKT",
+      "value": "ELEKT"
+    },
+    {
+      "trait_type": "SHIELD",
+      "value": "UNGARDROTHH"
+    },
+    {
+      "trait_type": "ENGINE",
+      "value": "DSGILL MAK"
+    },
+    {
+      "trait_type": "WEAPON SYSTEM",
+      "value": "HALMAHHER FUROR"
+    },
+    {
+      "trait_type": "GATE",
+      "value": "पथिन्"
+    },
+    {
+      "trait_type": "INVASION",
+      "value": "DRACHEN"
+    }
+  ]
+}

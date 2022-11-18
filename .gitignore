@@ -1,0 +1,8 @@
+.env*
+.DS_Store
+artifacts/*
+cache/*
+node_modules/*
+legacy/*
+output-pilot/*
+output-pilot-final/*
