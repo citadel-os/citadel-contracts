@@ -1,13 +1,12 @@
 const {fs} = require('file-system');
 
-const MULTIPLE = 243900;
+const MULTIPLE = 90000;
 const CITADEL_MAX = 1024;
 const ETH_MULTIPLIER = 1000000000000000000;
 let CITADEL = [];
 let wallets = [];
 let drakma = [];
 let walletsCollected = [];
-
 
 const BATCH_SEND = process.env.BATCH_SEND;
 
@@ -42,14 +41,14 @@ function dedupWallets() {
         for(let j = 0; j < wallets.length; j++) {
             if (walletsCollected[i] == wallets[j]) {
                 found = true;
-                drakma[j] = drakma[j] + 256000;
+                drakma[j] = drakma[j] + 10000;
                 break;
             }
         }
         if (!found) {
             index = wallets.length;
             wallets[index] = walletsCollected[i];
-            drakma[index] = 256000;
+            drakma[index] = 10000;
         }
     }
 
@@ -68,7 +67,7 @@ function populateCitadel() {
         let rawdata = fs.readFileSync(fileName);
         let citadel = JSON.parse(rawdata);
         CITADEL[i] = citadel;
-        if (citadel.techIndex >= 0 && citadel.techIndex < 8 && citadel.amountStaked > 0) {
+        if (citadel.techIndex >= 16 && citadel.techIndex < 24 && citadel.amountStaked > 0) {
             if (citadelMap.get(citadel.walletAddress)) {
                 increment = citadelMap.get(citadel.walletAddress) + 1;
                 citadelMap.set(citadel.walletAddress, increment);
