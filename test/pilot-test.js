@@ -6,7 +6,7 @@ const { ethers } = require("hardhat");
 
 chai.use(solidity);
 
-describe.only("pilot", function () {
+describe("pilot", function () {
     const ETH_DIVISOR = 1000000000000000000;
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");

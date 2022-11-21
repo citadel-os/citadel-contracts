@@ -6,19 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-/*
-Sovereign Collective Contract
-- contract drakma will be filled periodically
-- each sovereign can claim 1/128th of the drakma each time the contract is filled
-- only 128 claims can be made per period
-- claim amt = current drakma in contract / (128 - claims used)
-- an overthrown sovereign will lose any unused claims
-- claims are reset to 128 each time the contract is refilled
-- it is possible for a sovereign to claim, be overthrown, and have the same slot used twice. this create a situation where the last sovereign to attempt to claim may be rejected.
-- unclaimed drakma will be rolled over to the next period.
-- this is v1 of the contract. future upgrades are planned.
-*/
-
 interface IPILOT {
     function getOnchainPILOT(uint256 tokenId) external view returns (bool, uint8);
     function ownerOf(uint256 tokenId) external view returns (address);
