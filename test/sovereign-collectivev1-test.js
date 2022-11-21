@@ -60,7 +60,7 @@ describe('sovereign collective', function () {
         });
     });
 
-    describe.only('claim', function () {
+    describe('claim', function () {
         it('claim happy path', async function () {
             const [owner, addr2] = await ethers.getSigners();
             await this.drakma.mintDrakma(this.sovereign.address, "128000000000000000000000000");
