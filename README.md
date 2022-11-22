@@ -1,16 +1,28 @@
-cmds
-npx hardhat node
+## cmds
+```
 npx hardhat compile
-npx hardhat run scripts/interactDrakma.js --network goerli
-npx hardhat run scripts/deployCitadel.js --network localhost
+npx hardhat run scripts/interact/interactDrakma.js --network goerli
+npx hardhat run scripts/deploy/deployCitadel.js --network localhost
+
+node scripts/props/citadelProps.js
+node scripts/interact/whitelistMerkle.js
+npx hardhat run scripts/interact/interactCitadelNFT.js --network mainnet
+```
+
+## deploy
+```
+npx hardhat run scripts/deploy/deployCitadel.js --network localhost
+```
+
+## test
+```
+npx hardhat node
 npx hardhat test
+```
 
-node scripts/citadelProps.js
-node scripts/whitelistMerkle.js
+## verify
+```
+npx hardhat verify --network mainnet --constructor-args scripts/verify/pilot-verify-args.js 0xD653B9f4ec70658402B9634E7E0eAFcc64138Cad
 
-
-npx hardhat run scripts/interactCitadelNFT.js --network mainnet
-
-npx hardhat verify --network mainnet --constructor-args scripts/pilot-verify-args.js 0xD653B9f4ec70658402B9634E7E0eAFcc64138Cad
-
-npx hardhat verify --network mainnet --constructor-args scripts/citadel-verify-args.js 0xaF08134eA12494dc3AAA7f1EFB23A8753B7F84c9
+npx hardhat verify --network mainnet --constructor-args scripts/verify/citadel-verify-args.js 0xaF08134eA12494dc3AAA7f1EFB23A8753B7F84c9
+```
