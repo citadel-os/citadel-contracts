@@ -1,19 +1,14 @@
 const API_KEY = process.env.API_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
-const CITADEL_NFT = process.env.CITADEL_NFT;
-const PILOT_NFT = process.env.PILOT_NFT;
+const SOVEREIGN_COLLECTIVE = process.env.SOVEREIGN_COLLECTIVE;
 
 async function main() {
-    const PilotNFT = await ethers.getContractFactory("PilotNFT");
-    const pilotNFT = await PilotNFT.attach(PILOT_NFT);
+    const SovereignCollective = await ethers.getContractFactory("SovereignCollectiveV1");
+    const sovereign = await SovereignCollective.attach(SOVEREIGN_COLLECTIVE);
 
-    // await pilotNFT.updateBaseURI(
-    //   "https://gateway.pinata.cloud/ipfs/Qmd8YtpYKTLHt4B6dExMaGc5Phc7g36a1wj6hvErDj4U5R/"
-    // );
-
-    // tx = await pilotNFT.reservePILOT(256);
-    // console.log(tx);
+    tx = await sovereign.resetClaims();
+    console.log(tx);
 
     // tx = await pilotNFT.updateClaimParams(true);
     // console.log(tx);
@@ -25,8 +20,8 @@ async function main() {
     // tx = await pilotNFT.withdrawEth();
     // console.log(tx);
 
-    tx = await pilotNFT.withdrawDrakma("108672000000000000000000000");
-    console.log(tx);
+    // tx = await pilotNFT.withdrawDrakma("288000000000000000000000000");
+    // console.log(tx);
 
     // sovereignCounter = await pilotNFT.sovereignCounter();
     // console.log(sovereignCounter);
