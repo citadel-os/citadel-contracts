@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 interface IPILOT {
     function getOnchainPILOT(uint256 tokenId) external view returns (bool, uint8);
@@ -16,8 +15,6 @@ interface IPILOT {
 
 contract CitadelGameV1 is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
-    using SafeMath for uint8;
 
     // imports
     IERC20 public immutable drakma;
@@ -33,7 +30,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 timeOfLastRaid;
         uint256[] pilot;
         bool isLit;
-        uint256 timeOfLastDamage;
+        bool needsReturn;
         uint8 shieldPower;
     }
 
@@ -44,9 +41,18 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         bool isValue;
     }
 
+    struct Raid {
+        uint256 fromCitadel;
+        Fleet fleet;
+        uint256[] pilot;
+        bool isValue;
+        uint256 timeRaidHits;
+    }
+
     // mappings
     mapping(uint256 => CitadelStaked) public citadel;
     mapping(uint256 => Fleet) public fleet;
+    mapping(uint256 => Raid) public raid;
 
     // citadel props
     uint8[] public shieldProp = [0,1,1,1,0,0,1,3,0,1,2,0,1,0,0,0,0,0,0,1,2,0,0,0,0,1,1,1,0,0,3,0,0,1,0,1,0,1,0,0,1,0,1,0,0,0,3,2,2,2,1,2,1,3,0,0,2,0,2,0,3,0,0,0,2,0,0,2,3,0,1,1,0,1,0,0,1,1,1,0,0,0,0,0,0,2,0,0,0,0,0,0,3,0,0,2,0,0,1,0,1,0,2,2,1,2,1,0,1,1,0,0,0,2,0,0,0,1,0,1,1,1,0,0,1,0,0,0,0,1,0,0,1,0,2,0,6,4,0,0,2,1,4,2,0,0,0,1,0,2,0,0,0,0,2,0,3,1,0,0,1,0,0,2,1,0,0,0,0,0,1,0,1,0,0,3,1,0,2,0,1,0,0,0,2,0,2,4,0,0,0,0,1,0,0,0,3,0,1,3,0,1,0,1,1,2,0,0,1,1,1,0,2,0,0,0,0,0,2,0,1,0,2,3,1,2,1,0,1,0,2,0,1,1,1,0,1,0,0,1,1,0,0,0,2,2,3,1,1,3,0,0,0,0,2,0,1,0,1,1,1,1,3,0,1,1,0,6,2,0,3,0,1,1,1,1,1,0,2,2,2,1,0,1,0,0,0,2,0,0,0,1,0,3,0,3,2,2,0,0,0,0,0,1,0,0,0,0,2,1,0,1,0,1,0,1,4,0,0,1,0,0,0,1,2,0,0,2,2,1,1,2,0,1,2,3,0,4,1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,1,2,0,0,2,0,1,1,0,3,0,0,3,0,1,0,0,0,2,0,0,0,4,1,1,1,4,0,0,0,2,1,0,0,0,0,0,0,1,0,3,0,0,0,1,0,1,0,0,6,1,2,0,0,2,0,4,5,1,2,0,0,0,1,2,1,1,0,1,1,0,0,0,0,1,1,0,0,0,0,0,1,1,0,1,1,2,2,2,1,1,4,1,0,2,0,2,1,0,0,0,0,0,0,1,0,0,0,0,3,0,0,0,7,1,2,2,0,1,0,5,0,0,0,1,1,2,0,0,0,1,0,0,1,2,0,1,0,0,0,1,0,1,0,1,3,0,0,1,0,0,0,2,2,1,0,0,0,0,3,3,1,0,2,0,2,0,2,0,5,1,0,0,4,0,0,5,0,1,3,0,1,4,0,0,2,1,2,2,0,0,0,0,1,0,0,0,0,0,1,4,1,0,0,1,0,0,0,5,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,0,1,1,0,0,2,3,1,0,1,2,1,5,0,0,0,0,0,0,1,6,2,0,2,1,0,3,0,0,2,1,0,3,0,2,3,0,1,0,3,0,0,1,0,2,3,1,1,3,1,1,0,1,1,3,0,0,1,0,1,0,0,3,0,2,0,1,0,0,0,0,1,1,0,0,1,1,2,1,0,0,3,1,0,2,1,0,0,3,0,0,2,0,0,0,1,2,0,2,0,0,2,0,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,2,0,1,3,1,2,0,0,1,3,0,0,0,0,0,1,2,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,2,0,0,3,1,0,0,0,1,1,2,2,1,0,0,3,0,0,0,2,0,1,0,0,0,1,2,0,2,6,0,0,0,0,2,0,3,1,0,1,1,3,0,0,2,0,0,2,1,0,0,0,1,0,1,1,5,0,0,1,4,2,0,0,1,2,1,0,2,1,1,2,0,0,0,2,0,2,1,0,0,0,0,2,1,0,1,1,1,3,1,0,2,2,3,0,0,1,0,0,0,1,0,1,4,2,1,3,1,0,1,0,1,0,0,6,1,0,3,0,0,1,2,1,0,0,0,0,0,0,2,3,2,0,1,0,1,1,0,0,1,2,2,2,0,0,0,4,0,0,0,3,1,4,1,2,1,5,4,0,0,0,2,1,1,0,0,0,1,2,5,2,0,0,0,0,0,0,3,1,1,3,1,0,0,0,1,0,1,0,3,0,0,2,1,0,1,0,1,0,0,1,0,0,1,0,0,0,3,2,0,1,3,3,0,1,0,1,0,1,0,0,0,1,0,2,0,4,1,0,2,3,1,1,0,1,0,0,6,0,0,3,2,2,0,0,0,0,0,0,0,0,0,0,0,3,2,0,2,0,0,0,0,0,0,2,3,2,3,3,4,3,4,7,5,3,4,4,6,5,4,5,4,4,4,4,4,5,4,4,4,7,4,5,5,5,7];
@@ -71,6 +77,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         drakma = _drakma;
     }
 
+    // external functions
     function liteGrid(uint256 _citadelId, uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) external nonReentrant {
         require(
             citadelCollection.ownerOf(_citadelId) == msg.sender,
@@ -126,6 +133,23 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         claimInternal(_citadelId);
     }
 
+    function trainFleet(uint256 sifGattaca, uint256 mhrudvogThrot, uint256 drebentraakht) external nonReentrant returns (uint256) {
+        uint256 timeTrainingDone = 0;
+
+        return timeTrainingDone;
+    }
+
+    function sendRaid(uint256 _fromCitadel, uint256 _toCitadel, uint256[] calldata pilot, uint256 sifGattaca, uint256 drebentraakht) external nonReentrant returns (uint256) {
+        uint256 timeRaidHits = 0;
+
+        return timeRaidHits;
+    }
+
+    function returnRaid(uint256 _toCitadel) external nonReentrant {
+
+    }
+
+    // internal functions
     function claimInternal(uint256 _citadelId) internal {
         require(citadel[_citadelId].timeOfLastClaim > 0, "cannot claim unlit citadel");
         require(
@@ -148,24 +172,73 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
-    function calculateCitadelMultiple(uint8 index) internal view returns (uint256, uint256) {
+    function calculateBaseCitadelMultiple(uint8 index) internal view returns (uint256) {
         if (index == 0) {
-            return (2, 0);
+            return 10;
         } else if (index == 1) {
-            return (2, 1);
+            return 11;
         } else if (index == 2) {
-            return (2, 2);
+            return 12;
         } else if (index == 3) {
-            return (3, 0);
+            return 15;
         } else if (index == 4) {
-            return (3, 3);
+            return 17;
         } else if (index == 5) {
-            return (4, 3);
+            return 20;
         } else if (index == 6) {
-            return (5, 0);
+            return 25;
         } else {
-            return (7, 2);
+            return 35;
         }
+    }
+
+    function calculateUniqueBonus(uint8 weapon, uint8 engine, uint8 shield) internal view returns (uint256, uint256) {
+        uint256 swarmMultiple = 0;
+        uint256 siegeMultiple = 0;
+        if (weapon == 0) {
+            swarmMultiple += 5;
+        } else if (weapon == 1) {
+            siegeMultiple += 5;
+        } else if (weapon == 2) {
+            swarmMultiple += 6;
+        } else if (weapon == 3) {
+            swarmMultiple += 7;
+        } else if (weapon == 4) {
+            siegeMultiple += 7;
+        } else if (weapon == 6) {
+            swarmMultiple += 10;
+        }
+
+        if (shield == 0) {
+            siegeMultiple += 5;
+        } else if (shield == 1) {
+            siegeMultiple += 10;
+        } else if (shield == 2) {
+            swarmMultiple += 2;
+            siegeMultiple += 2;
+        } else if (shield == 3) {
+            siegeMultiple += 15;
+        } else if (shield == 4) {
+            swarmMultiple += 5;
+            siegeMultiple += 5;
+        } else if (shield == 5) {
+            swarmMultiple += 15;
+        } else {
+            swarmMultiple += 25;
+        }
+
+        if (engine == 0) {
+            swarmMultiple += 1;
+            siegeMultiple += 1;
+        } else if (engine == 1) {
+            swarmMultiple += 2;
+            siegeMultiple += 2;
+        } else if (engine == 5) {
+            swarmMultiple += 5;
+            siegeMultiple += 5;
+        }
+        
+        return (swarmMultiple, siegeMultiple);
     }
 
     // public views
@@ -176,7 +249,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         );
     }
 
-    function calculateCitadelOP(uint256 _citadelId) public view returns (uint256) {
+    function combatOP(uint256 _citadelId, uint256[] calldata pilot) public view returns (uint256) {
         uint256 multiple = 0;
         for (uint256 i; i < citadel[_citadelId].pilot.length; ++i) {
             (,uint8 level) = pilotCollection.getOnchainPILOT(citadel[_citadelId].pilot[i]);
@@ -186,19 +259,23 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         return multiple;
     }
 
-    function calculateCitadelDP(uint256 _citadelId) public view returns (uint256) {
+    function combatDP(uint256 _citadelId) public view returns (uint256, uint256) {
+        uint256 swarmMultiple = 0;
+        uint256 siegeMultiple = 0;
         uint256 multiple = 0;
         for (uint256 i; i < citadel[_citadelId].pilot.length; ++i) {
             (,uint8 level) = pilotCollection.getOnchainPILOT(citadel[_citadelId].pilot[i]);
             multiple += pilotMultiple * (level * levelMultiple);
         }
 
-        uint256 weaponsWhole;
-        uint256 weaponsFraction;
-        (weaponsWhole, weaponsFraction) = calculateCitadelMultiple(weaponsProp[_citadelId]);
-        multiple += weaponsWhole + (weaponsFraction / 4);
+        multiple += calculateBaseCitadelMultiple(weaponsProp[_citadelId]);
+        multiple += calculateBaseCitadelMultiple(shieldProp[_citadelId]);
         
-        return multiple;
+        (swarmMultiple, siegeMultiple) = calculateUniqueBonus(weaponsProp[_citadelId], engineProp[_citadelId], shieldProp[_citadelId]);
+        swarmMultiple += multiple;
+        siegeMultiple += multiple;
+
+        return (swarmMultiple, siegeMultiple);
     }
 
 
