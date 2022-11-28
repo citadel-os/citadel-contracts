@@ -30,7 +30,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 timeOfLastRaid;
         uint256[] pilot;
         bool isLit;
-        bool needsReturn;
+        bool isOnline;
         uint8 shieldPower;
     }
 
@@ -42,7 +42,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     struct Raid {
-        uint256 fromCitadel;
+        uint256 toCitadel;
         Fleet fleet;
         uint256[] pilot;
         bool isValue;
@@ -50,9 +50,9 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     // mappings
-    mapping(uint256 => CitadelStaked) public citadel;
-    mapping(uint256 => Fleet) public fleet;
-    mapping(uint256 => Raid) public raid;
+    mapping(uint256 => CitadelStaked) public citadel; // index is _citadelId
+    mapping(uint256 => Fleet) public fleet; // index is _citadelId
+    mapping(uint256 => Raid) public raids; // index is _fromCitadelId
 
     // citadel props
     uint8[] public shieldProp = [0,1,1,1,0,0,1,3,0,1,2,0,1,0,0,0,0,0,0,1,2,0,0,0,0,1,1,1,0,0,3,0,0,1,0,1,0,1,0,0,1,0,1,0,0,0,3,2,2,2,1,2,1,3,0,0,2,0,2,0,3,0,0,0,2,0,0,2,3,0,1,1,0,1,0,0,1,1,1,0,0,0,0,0,0,2,0,0,0,0,0,0,3,0,0,2,0,0,1,0,1,0,2,2,1,2,1,0,1,1,0,0,0,2,0,0,0,1,0,1,1,1,0,0,1,0,0,0,0,1,0,0,1,0,2,0,6,4,0,0,2,1,4,2,0,0,0,1,0,2,0,0,0,0,2,0,3,1,0,0,1,0,0,2,1,0,0,0,0,0,1,0,1,0,0,3,1,0,2,0,1,0,0,0,2,0,2,4,0,0,0,0,1,0,0,0,3,0,1,3,0,1,0,1,1,2,0,0,1,1,1,0,2,0,0,0,0,0,2,0,1,0,2,3,1,2,1,0,1,0,2,0,1,1,1,0,1,0,0,1,1,0,0,0,2,2,3,1,1,3,0,0,0,0,2,0,1,0,1,1,1,1,3,0,1,1,0,6,2,0,3,0,1,1,1,1,1,0,2,2,2,1,0,1,0,0,0,2,0,0,0,1,0,3,0,3,2,2,0,0,0,0,0,1,0,0,0,0,2,1,0,1,0,1,0,1,4,0,0,1,0,0,0,1,2,0,0,2,2,1,1,2,0,1,2,3,0,4,1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,1,2,0,0,2,0,1,1,0,3,0,0,3,0,1,0,0,0,2,0,0,0,4,1,1,1,4,0,0,0,2,1,0,0,0,0,0,0,1,0,3,0,0,0,1,0,1,0,0,6,1,2,0,0,2,0,4,5,1,2,0,0,0,1,2,1,1,0,1,1,0,0,0,0,1,1,0,0,0,0,0,1,1,0,1,1,2,2,2,1,1,4,1,0,2,0,2,1,0,0,0,0,0,0,1,0,0,0,0,3,0,0,0,7,1,2,2,0,1,0,5,0,0,0,1,1,2,0,0,0,1,0,0,1,2,0,1,0,0,0,1,0,1,0,1,3,0,0,1,0,0,0,2,2,1,0,0,0,0,3,3,1,0,2,0,2,0,2,0,5,1,0,0,4,0,0,5,0,1,3,0,1,4,0,0,2,1,2,2,0,0,0,0,1,0,0,0,0,0,1,4,1,0,0,1,0,0,0,5,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,0,1,1,0,0,2,3,1,0,1,2,1,5,0,0,0,0,0,0,1,6,2,0,2,1,0,3,0,0,2,1,0,3,0,2,3,0,1,0,3,0,0,1,0,2,3,1,1,3,1,1,0,1,1,3,0,0,1,0,1,0,0,3,0,2,0,1,0,0,0,0,1,1,0,0,1,1,2,1,0,0,3,1,0,2,1,0,0,3,0,0,2,0,0,0,1,2,0,2,0,0,2,0,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,2,0,1,3,1,2,0,0,1,3,0,0,0,0,0,1,2,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,2,0,0,3,1,0,0,0,1,1,2,2,1,0,0,3,0,0,0,2,0,1,0,0,0,1,2,0,2,6,0,0,0,0,2,0,3,1,0,1,1,3,0,0,2,0,0,2,1,0,0,0,1,0,1,1,5,0,0,1,4,2,0,0,1,2,1,0,2,1,1,2,0,0,0,2,0,2,1,0,0,0,0,2,1,0,1,1,1,3,1,0,2,2,3,0,0,1,0,0,0,1,0,1,4,2,1,3,1,0,1,0,1,0,0,6,1,0,3,0,0,1,2,1,0,0,0,0,0,0,2,3,2,0,1,0,1,1,0,0,1,2,2,2,0,0,0,4,0,0,0,3,1,4,1,2,1,5,4,0,0,0,2,1,1,0,0,0,1,2,5,2,0,0,0,0,0,0,3,1,1,3,1,0,0,0,1,0,1,0,3,0,0,2,1,0,1,0,1,0,0,1,0,0,1,0,0,0,3,2,0,1,3,3,0,1,0,1,0,1,0,0,0,1,0,2,0,4,1,0,2,3,1,1,0,1,0,0,6,0,0,3,2,2,0,0,0,0,0,0,0,0,0,0,0,3,2,0,2,0,0,0,0,0,0,2,3,2,3,3,4,3,4,7,5,3,4,4,6,5,4,5,4,4,4,4,4,5,4,4,4,7,4,5,5,5,7];
@@ -70,6 +70,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     uint8 public pilotMultiple = 25;
     uint8 public levelMultiple = 5;
     uint256 public multipleDivisor = 100;
+    bool public subgridOpen = false;
 
     constructor(IERC721 _citadelCollection, IPILOT _pilotCollection, IERC20 _drakma) {
         citadelCollection = _citadelCollection;
@@ -95,6 +96,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].timeOfLastClaim = lastTimeRewardApplicable();
         citadel[_citadelId].timeOfLastRaid = lastTimeRewardApplicable();
         citadel[_citadelId].isLit = true;
+        citadel[_citadelId].isOnline = true;
         if(!fleet[_citadelId].isValue) {
             fleet[_citadelId] = Fleet(0,0,0,true);
         }
@@ -127,6 +129,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].timeOfLastClaim = 0;
         citadel[_citadelId].timeOfLastRaid = 0;
         citadel[_citadelId].isLit = false;
+        citadel[_citadelId].isOnline = false;
     }
 
     function claim(uint256 _citadelId) external nonReentrant {
@@ -140,12 +143,59 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     function sendRaid(uint256 _fromCitadel, uint256 _toCitadel, uint256[] calldata pilot, uint256 sifGattaca, uint256 drebentraakht) external nonReentrant returns (uint256) {
-        uint256 timeRaidHits = 0;
+        require(
+            citadel[_fromCitadel].walletAddress == msg.sender,
+            "must own lit citadel to raid"
+        );
+        require(
+            citadel[_fromCitadel].isLit == true && citadel[_fromCitadel].isOnline == true,
+            "attacking citadel must be lit and online to raid"
+        );
+        require(
+            citadel[_toCitadel].isLit == true && citadel[_toCitadel].isOnline == true,
+            "defending citadel must be lit and online to raid"
+        );
+        require(
+            raids[_fromCitadel].isValue == false,
+            "raids must resolve before another can be sent"
+        );
+        require(
+            sifGattaca <= fleet[_fromCitadel].sifGattaca && drebentraakht <= fleet[_fromCitadel].drebentraakht,
+            "cannot send more fleet than are trained"
+        );
+
+        for (uint256 i; i < pilot.length; ++i) {
+            bool pilotFound = false;
+            for (uint256 j; j < citadel[_fromCitadel].pilot.length; ++j) {
+                if(pilot[i] == citadel[_fromCitadel].pilot[j]) {
+                    pilotFound = true;
+                    break;
+                }
+            }
+            require(pilotFound == true, "pilot sent must be staked to raiding citadel");
+        }
+
+        // raids immediate when subgrid open
+        uint256 timeRaidHits = lastTimeRewardApplicable();
+        uint256 gridDistance = calculateGridDistance(citadel[_fromCitadel].gridId, citadel[_toCitadel].gridId);
+        if (gridDistance == 0 || subgridOpen == true) {
+            resolveRaid(_toCitadel);
+            return timeRaidHits;
+        }
+
+        timeRaidHits += (gridDistance * 3600000);
+
+
+        //Fleet sentFleet = Fleet(sifGattaca, 0, drebentraakht, true);
+        raids[_fromCitadel] = Raid(_toCitadel, Fleet(sifGattaca, 0, drebentraakht, true), pilot, true, timeRaidHits);
+
 
         return timeRaidHits;
     }
 
-    function returnRaid(uint256 _toCitadel) external nonReentrant {
+    // public functions
+    function resolveRaid(uint256 _toCitadel) public nonReentrant {
+
 
     }
 
@@ -241,15 +291,32 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         return (swarmMultiple, siegeMultiple);
     }
 
+    function calculateMinintMultiple(uint8 engine, uint8 shield) internal view returns (uint256) {
+        uint256 multiple = 0;
+        if (shield == 6) {
+            multiple += 5;
+        }
+
+        if (engine == 3) {
+            multiple += 1;
+        } else if (engine == 7) {
+            multiple += 5;
+        }
+
+        return multiple;
+    }
+
     // public views
     function calculateMiningOutput(uint256 _citadelId, uint256 _gridId) public view returns (uint256) {
+        uint256 miningMultiple = calculateMinintMultiple(engineProp[_citadelId], shieldProp[_citadelId]);
         return (
             (lastTimeRewardApplicable() - citadel[_citadelId].timeOfLastClaim) *
-                ((baseMiningRatePerHour * (getGridMultiple(_gridId) / 10)) / 3600)
+                ((baseMiningRatePerHour * (getGridMultiple(_gridId) / 10)) / 3600) *
+                (miningMultiple / 100)
         );
     }
 
-    function combatOP(uint256 _citadelId, uint256[] calldata pilot) public view returns (uint256) {
+    function combatOP(uint256 _citadelId) public view returns (uint256) {
         uint256 multiple = 0;
         for (uint256 i; i < citadel[_citadelId].pilot.length; ++i) {
             (,uint8 level) = pilotCollection.getOnchainPILOT(citadel[_citadelId].pilot[i]);
@@ -292,6 +359,11 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         }
         
         return multiple;
+    }
+
+    function calculateGridDistance(uint256 _fromGridId, uint256 _toGridId) public view returns (uint256) {
+
+        return 1;
     }
 
     function getCitadelFleedCount(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
