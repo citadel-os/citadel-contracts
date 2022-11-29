@@ -31,6 +31,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256[] pilot;
         bool isLit;
         bool isOnline;
+        uint256 timeWentOffline;
         uint8 shieldPower;
     }
 
@@ -71,6 +72,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     uint8 public levelMultiple = 5;
     uint256 public multipleDivisor = 100;
     bool public subgridOpen = false;
+    uint256 public minFleet = 500;
 
     constructor(IERC721 _citadelCollection, IPILOT _pilotCollection, IERC20 _drakma) {
         citadelCollection = _citadelCollection;
@@ -164,6 +166,10 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             sifGattaca <= fleet[_fromCitadel].sifGattaca && drebentraakht <= fleet[_fromCitadel].drebentraakht,
             "cannot send more fleet than are trained"
         );
+        require(
+            sifGattaca + drebentraakht >= minFleet,
+            "fleet sent in raid must exceed minimum for raiding"
+        );
 
         for (uint256 i; i < pilot.length; ++i) {
             bool pilotFound = false;
@@ -179,10 +185,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         // raids immediate when subgrid open
         uint256 timeRaidHits = lastTimeRewardApplicable();
         uint256 gridDistance = calculateGridDistance(citadel[_fromCitadel].gridId, citadel[_toCitadel].gridId);
-        if (gridDistance == 0 || subgridOpen == true) {
-            resolveRaidInternal(_fromCitadel);
-            return timeRaidHits;
-        }
         timeRaidHits += (gridDistance * 3600000);
 
         //Fleet sentFleet = Fleet(sifGattaca, 0, drebentraakht, true);
@@ -191,6 +193,13 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleet[_fromCitadel].drebentraakht -= drebentraakht;
         citadel[_fromCitadel].isOnline = false;
         citadel[_toCitadel].isOnline = false;
+        citadel[_fromCitadel].timeWentOffline = timeRaidHits;
+        citadel[_toCitadel].timeWentOffline = timeRaidHits;
+
+        if (gridDistance == 0 || subgridOpen == true) {
+            resolveRaidInternal(_fromCitadel);
+            return timeRaidHits;
+        }
 
         return timeRaidHits;
     }
