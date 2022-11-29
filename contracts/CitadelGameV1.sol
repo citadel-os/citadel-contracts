@@ -143,6 +143,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     function sendRaid(uint256 _fromCitadel, uint256 _toCitadel, uint256[] calldata pilot, uint256 sifGattaca, uint256 drebentraakht) external nonReentrant returns (uint256) {
+        require(_fromCitadel != _toCitadel, "cannot raid own citadel");
         require(
             citadel[_fromCitadel].walletAddress == msg.sender,
             "must own lit citadel to raid"
@@ -179,27 +180,36 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 timeRaidHits = lastTimeRewardApplicable();
         uint256 gridDistance = calculateGridDistance(citadel[_fromCitadel].gridId, citadel[_toCitadel].gridId);
         if (gridDistance == 0 || subgridOpen == true) {
-            resolveRaid(_toCitadel);
+            resolveRaidInternal(_fromCitadel);
             return timeRaidHits;
         }
-
         timeRaidHits += (gridDistance * 3600000);
-
 
         //Fleet sentFleet = Fleet(sifGattaca, 0, drebentraakht, true);
         raids[_fromCitadel] = Raid(_toCitadel, Fleet(sifGattaca, 0, drebentraakht, true), pilot, true, timeRaidHits);
-
+        fleet[_fromCitadel].sifGattaca -= sifGattaca;
+        fleet[_fromCitadel].drebentraakht -= drebentraakht;
+        citadel[_fromCitadel].isOnline = false;
+        citadel[_toCitadel].isOnline = false;
 
         return timeRaidHits;
     }
 
     // public functions
-    function resolveRaid(uint256 _toCitadel) public nonReentrant {
+    function resolveRaid(uint256 _fromCitadel) external nonReentrant {
+        require(
+            citadel[_fromCitadel].isOnline == true,
+            "citadel does not require raid resolution"
+        );
 
-
+        resolveRaidInternal(_fromCitadel);
     }
 
     // internal functions
+    function resolveRaidInternal(uint256 _fromCitadel) internal {
+
+    }
+
     function claimInternal(uint256 _citadelId) internal {
         require(citadel[_citadelId].timeOfLastClaim > 0, "cannot claim unlit citadel");
         require(
@@ -362,8 +372,19 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     function calculateGridDistance(uint256 _fromGridId, uint256 _toGridId) public view returns (uint256) {
+        uint256 higher;
+        uint256 lower;
+        if(_fromGridId >= _toGridId) {
+            higher = _fromGridId;
+            lower = _toGridId;
+        } else {
+            higher = _toGridId;
+            lower = _fromGridId;
+        }
 
-        return 1;
+        return (
+            (higher % 4) + (higher / lower)
+        );
     }
 
     function getCitadelFleedCount(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
