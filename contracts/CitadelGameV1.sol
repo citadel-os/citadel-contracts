@@ -152,16 +152,16 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         claimInternal(_citadelId);
     }
 
-    function trainFleet(uint256 _citadalId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant returns (uint256) {
+    function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant returns (uint256) {
         require(
-            citadel[_citadalId].walletAddress == msg.sender,
+            citadel[_citadelId].walletAddress == msg.sender,
             "must own lit citadel to raid"
         );
         require(
-            citadel[_citadalId].isLit == true && citadel[_citadalId].isOnline == true,
+            citadel[_citadelId].isLit == true && citadel[_citadelId].isOnline == true,
             "citadel must be lit and online to train fleet"
         );
-        resolveTraining(_citadalId);
+        resolveTraining(_citadelId);
         require(
             fleet[_citadelId].trainingDone == 0,
             "cannot train new fleet until previous has finished"
@@ -180,13 +180,13 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         if(_drebentraakht * drebentraakhtTrainingTime > timeTrainingDone) {
             timeTrainingDone = _drebentraakht * drebentraakhtTrainingTime;
         }
-        fleet[_citadelId].timeTrainingDone = lastTimeRewardApplicable() + timeTrainingDone;
+        fleet[_citadelId].trainingDone = lastTimeRewardApplicable() + timeTrainingDone;
         fleet[_citadelId].trainingFleet.sifGattaca = _sifGattaca;
         fleet[_citadelId].trainingFleet.mhrudvogThrot = _mhrudvogThrot;
         fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
         
 
-        return fleet[_citadelId].timeTrainingDone;
+        return fleet[_citadelId].trainingDone;
     }
 
     function sendRaid(uint256 _fromCitadel, uint256 _toCitadel, uint256[] calldata pilot, uint256 sifGattaca, uint256 drebentraakht) external nonReentrant returns (uint256) {
