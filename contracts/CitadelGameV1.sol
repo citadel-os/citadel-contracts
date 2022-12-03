@@ -79,11 +79,18 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     uint256 sifGattacaTrainingTime = 2 hours;
     uint256 mhrudvogThrotTrainingTime = 5 hours;
     uint256 drebentraakhtTrainingTime = 24 hours;
+    uint256 sifGattacaOP = 10;
+    uint256 mhrudvogThrotOP = 5;
+    uint256 drebentraakhtOP = 500;
+    uint256 sifGattacaDP = 5;
+    uint256 mhrudvogThrotDP = 40;
+    uint256 drebentraakhtDP = 250;
     uint8 public pilotMultiple = 20;
     uint8 public levelMultiple = 2;
     uint256 public multipleDivisor = 100;
     bool public subgridOpen = false;
     uint256 public minFleet = 500;
+    uint256 public raidMaxExpiry = 24 hours;
     
 
     constructor(IERC721 _citadelCollection, IPILOT _pilotCollection, IERC20 _drakma) {
@@ -254,8 +261,9 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
     // public functions
     function resolveRaid(uint256 _fromCitadel) external nonReentrant {
+        uint256 toCitadel = raids[_fromCitadel].toCitadel;
         require(
-            citadel[_fromCitadel].isOnline == true,
+            citadel[_fromCitadel].isOnline == false || citadel[toCitadel].isOnline == false,
             "citadel does not require raid resolution"
         );
 
@@ -264,8 +272,31 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
     // internal functions
     function resolveRaidInternal(uint256 _fromCitadel) internal {
-        resolveTraining(raids[_fromCitadel].toCitadel);
+        uint256 toCitadel = raids[_fromCitadel].toCitadel;
+        resolveTraining(toCitadel);
 
+        // if left on grid 24 hours from hit time, fleet to defenders defect
+        if(lastTimeRewardApplicable() > (raids[_fromCitadel].timeRaidHits + raidMaxExpiry)) {
+            fleet[toCitadel].fleet.sifGattaca += raids[_fromCitadel].fleet.sifGattaca;
+            fleet[toCitadel].fleet.mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
+            fleet[toCitadel].fleet.drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
+            delete raids[_fromCitadel];
+            return;
+        }
+
+        // calculate op ration, dp ratio
+
+        // calculate fleet damage
+
+        // delete fleet
+
+        // citadel specific ie plague
+
+        // return fleet and empty raid
+        fleet[_fromCitadel].fleet.sifGattaca += raids[_fromCitadel].fleet.sifGattaca;
+        fleet[_fromCitadel].fleet.mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
+        fleet[_fromCitadel].fleet.drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
+        delete raids[_fromCitadel];
     }
 
     function resolveTraining(uint256 _citadelId) internal {
@@ -371,7 +402,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         return (swarmMultiple, siegeMultiple);
     }
 
-    function calculateMinintMultiple(uint8 engine, uint8 shield) internal view returns (uint256) {
+    function calculateMiningMultiple(uint8 engine, uint8 shield) internal view returns (uint256) {
         uint256 multiple = 0;
         if (shield == 6) {
             multiple += 5;
@@ -388,7 +419,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
     // public views
     function calculateMiningOutput(uint256 _citadelId, uint256 _gridId) public view returns (uint256) {
-        uint256 miningMultiple = calculateMinintMultiple(engineProp[_citadelId], shieldProp[_citadelId]);
+        uint256 miningMultiple = calculateMiningMultiple(engineProp[_citadelId], shieldProp[_citadelId]);
         return (
             (lastTimeRewardApplicable() - citadel[_citadelId].timeOfLastClaim) *
                 ((baseMiningRatePerHour * (getGridMultiple(_gridId) / 10)) / 3600) *
@@ -402,11 +433,14 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             (,uint8 level) = pilotCollection.getOnchainPILOT(citadel[_citadelId].pilot[i]);
             multiple += pilotMultiple * (level * levelMultiple);
         }
-
-        return multiple;
+        return ((multiple / multipleDivisor) * (
+            (raids[_citadelId].fleet.sifGattaca * sifGattacaOP) +
+            (raids[_citadelId].fleet.mhrudvogThrot * mhrudvogThrotOP) +
+            (raids[_citadelId].fleet.drebentraakht * drebentraakhtOP)
+        ));
     }
 
-    function combatDP(uint256 _citadelId) public view returns (uint256, uint256) {
+    function combatDP(uint256 _citadelId) public view returns (uint256) {
         uint256 swarmMultiple = 0;
         uint256 siegeMultiple = 0;
         uint256 multiple = 0;
@@ -419,10 +453,12 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         multiple += calculateBaseCitadelMultiple(shieldProp[_citadelId]);
         
         (swarmMultiple, siegeMultiple) = calculateUniqueBonus(weaponsProp[_citadelId], engineProp[_citadelId], shieldProp[_citadelId]);
-        swarmMultiple += multiple;
-        siegeMultiple += multiple;
 
-        return (swarmMultiple, siegeMultiple);
+        return ((multiple / multipleDivisor) * (
+            (raids[_citadelId].fleet.sifGattaca * sifGattacaDP * (swarmMultiple / multipleDivisor)) +
+            (raids[_citadelId].fleet.mhrudvogThrot * mhrudvogThrotDP) +
+            (raids[_citadelId].fleet.drebentraakht * drebentraakhtDP * (siegeMultiple / multipleDivisor))
+        ));
     }
 
 
