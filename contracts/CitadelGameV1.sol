@@ -7,12 +7,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-interface IPILOT {
-    function getOnchainPILOT(uint256 tokenId) external view returns (bool, uint8);
-    function transferFrom(address, address, uint256) external;
-    function ownerOf(uint256 tokenId) external view returns (address);
-}
-
 interface ICOMBATENGINE {
     function combatOP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external view returns (uint256);
     function combatDP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external view returns (uint256);
@@ -26,7 +20,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     // imports
     IERC20 public immutable drakma;
     IERC721 public immutable citadelCollection;
-    IPILOT public immutable pilotCollection;
+    IERC721 public immutable pilotCollection;
     ICOMBATENGINE public immutable combatEngine;
 
     // data structures
@@ -74,9 +68,9 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     mapping(uint256 => Raid) public raids; // index is _fromCitadelId
 
     //variables
-    uint256 public periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
-    uint256 public maxGrid = 1000;
-    uint8 public maxFaction = 5;
+    uint256 periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
+    uint256 maxGrid = 1024;
+    uint8 maxFaction = 5;
     uint256 public sifGattacaPrice = 20000000000000000000;
     uint256 public mhrudvogThrotPrice = 40000000000000000000;
     uint256 public drebentraakhtPrice = 800000000000000000000;
@@ -86,14 +80,12 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     uint256 public sifGattacaCary = 10;
     uint256 public mhrudvogThrotCary = 2;
     uint256 public drebentraakhtCary = 400;
-    uint8 public pilotMultiple = 20;
-    uint8 public levelMultiple = 2;
     bool public subgridOpen = false;
-    uint256 public minFleet = 500;
-    uint256 public raidMaxExpiry = 24 hours;
+    uint256 minFleet = 500;
+    uint256 raidMaxExpiry = 24 hours;
     
 
-    constructor(IERC721 _citadelCollection, IPILOT _pilotCollection, IERC20 _drakma, ICOMBATENGINE _combatEngine) {
+    constructor(IERC721 _citadelCollection, IERC721 _pilotCollection, IERC20 _drakma, ICOMBATENGINE _combatEngine) {
         citadelCollection = _citadelCollection;
         pilotCollection = _pilotCollection;
         drakma = _drakma;

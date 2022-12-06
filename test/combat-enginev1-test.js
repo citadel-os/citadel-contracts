@@ -51,18 +51,23 @@ describe("combat engine v1", function () {
       let sifGattacaOP = 0;
       let mhrudvogThrotOP = 0;
       let drebentraakhtOP = 0;
+      let pilotMultiple = 0;
 
 
       beforeEach(async function () {
         sifGattacaOP = await this.combatEngineV1.sifGattacaOP();
         mhrudvogThrotOP = await this.combatEngineV1.mhrudvogThrotOP();
         drebentraakhtOP = await this.combatEngineV1.drebentraakhtOP();
+        pilotMultiple = await this.combatEngineV1.pilotMultiple();
+
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
       });
 
-      it("checks basic op", async function () {
+      it("basic op", async function () {
         [owner, addr1] = await ethers.getSigners();
-        let sifGattaca = 100;
-        let mhrudvogThrot = 0;
+        let sifGattaca = 500;
+        let mhrudvogThrot = 1;
         let drebentraakht = 5;
         let pilot = [];
 
@@ -72,6 +77,22 @@ describe("combat engine v1", function () {
         let op = await this.combatEngineV1.combatOP(0, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
         
         expect(op).to.equal(expectedOP);
+      });
+      it("basic op with pilot", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        let sifGattaca = 500;
+        let mhrudvogThrot = 1;
+        let drebentraakht = 5;
+        let pilot = [1];
+
+        let expectedOP = ((sifGattaca * sifGattacaOP) + 
+          (mhrudvogThrot * mhrudvogThrotOP) +
+          (drebentraakht * drebentraakhtOP)) *
+          (1 + (pilotMultiple / 100));
+        let op = await this.combatEngineV1.combatOP(0, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+        console.log(expectedOP);
+        console.log(op);
+        //expect(op).to.equal(expectedOP);
       });
     });
 

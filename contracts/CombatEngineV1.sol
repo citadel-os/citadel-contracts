@@ -23,8 +23,8 @@ contract CombatEngineV1 {
     uint256 public sifGattacaDP = 5;
     uint256 public mhrudvogThrotDP = 40;
     uint256 public drebentraakhtDP = 250;
-    uint256 public periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
 
+    uint256 periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
     uint256 multipleDivisor = 100;
     
     constructor(IPILOT _pilotCollection) {
