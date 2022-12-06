@@ -45,25 +45,33 @@ describe("combat engine v1", function () {
       );
       await this.combatEngineV1.deployed();
 
-      this.citadelGameV1 = await this.CitadelGameV1.deploy(
-        this.citadelNFT.address,
-        this.pilotNFT.address,
-        this.drakma.address,
-        this.combatEngineV1.address
-      );
-      await this.citadelGameV1.deployed();
     });
     
-    describe("stakeing", function () {
+    describe.only("combat engine", function () {
+      let sifGattacaOP = 0;
+      let mhrudvogThrotOP = 0;
+      let drebentraakhtOP = 0;
+
 
       beforeEach(async function () {
-
+        sifGattacaOP = await this.combatEngineV1.sifGattacaOP();
+        mhrudvogThrotOP = await this.combatEngineV1.mhrudvogThrotOP();
+        drebentraakhtOP = await this.combatEngineV1.drebentraakhtOP();
       });
 
-      it("stakes a citadel", async function () {
+      it("checks basic op", async function () {
         [owner, addr1] = await ethers.getSigners();
+        let sifGattaca = 100;
+        let mhrudvogThrot = 0;
+        let drebentraakht = 5;
+        let pilot = [];
 
-        expect(1).to.equal(1);
+        let expectedOP = (sifGattaca * sifGattacaOP) + 
+          (mhrudvogThrot * mhrudvogThrotOP) +
+          (drebentraakht * drebentraakhtOP);
+        let op = await this.combatEngineV1.combatOP(0, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+        
+        expect(op).to.equal(expectedOP);
       });
     });
 
