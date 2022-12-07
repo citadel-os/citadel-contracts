@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "hardhat/console.sol";
 
 interface IPILOT {
     function getOnchainPILOT(uint256 tokenId) external view returns (bool, uint8);
@@ -25,7 +26,6 @@ contract CombatEngineV1 {
     uint256 public drebentraakhtDP = 250;
 
     uint256 periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
-    uint256 multipleDivisor = 100;
     
     constructor(IPILOT _pilotCollection) {
         pilotCollection = _pilotCollection;
@@ -33,15 +33,19 @@ contract CombatEngineV1 {
 
     function combatOP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) public view returns (uint256) {
         uint256 multiple = 0;
+
         for (uint256 i; i < _pilotIds.length; ++i) {
             (,uint8 level) = pilotCollection.getOnchainPILOT(_pilotIds[i]);
-            multiple += pilotMultiple * (level * levelMultiple);
+            multiple += pilotMultiple + (level * levelMultiple);
         }
-        return ((1 + (multiple / multipleDivisor)) * (
+
+        return (((
             (_sifGattaca * sifGattacaOP) +
             (_mhrudvogThrot * mhrudvogThrotOP) +
-            (_drebentraakht * drebentraakhtOP)
-        ));
+            (_drebentraakht * drebentraakhtOP)) 
+            * (100 + multiple)) 
+            / 100
+        );
     }
 
     function combatDP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) public view returns (uint256) {
@@ -50,7 +54,7 @@ contract CombatEngineV1 {
         uint256 multiple = 0;
         for (uint256 i; i < _pilotIds.length; ++i) {
             (,uint8 level) = pilotCollection.getOnchainPILOT(_pilotIds[i]);
-            multiple += pilotMultiple * (level * levelMultiple);
+            multiple += pilotMultiple + (level * levelMultiple);
         }
 
         multiple += calculateBaseCitadelMultiple(weaponsProp[_citadelId]);
@@ -58,11 +62,14 @@ contract CombatEngineV1 {
         
         (swarmMultiple, siegeMultiple) = calculateUniqueBonus(weaponsProp[_citadelId], engineProp[_citadelId], shieldProp[_citadelId]);
 
-        return ((multiple / multipleDivisor) * (
-            (_sifGattaca * sifGattacaDP * (swarmMultiple / multipleDivisor)) +
-            (_mhrudvogThrot * mhrudvogThrotDP) +
-            (_drebentraakht * drebentraakhtDP * (siegeMultiple / multipleDivisor))
-        ));
+        return ((
+            (
+                ((_sifGattaca * sifGattacaDP) * (100 + swarmMultiple) / 100) +
+                (_mhrudvogThrot * mhrudvogThrotDP) +
+                ((_drebentraakht * drebentraakhtDP) * (100 + siegeMultiple) / 100)
+            ) 
+            * (100 + multiple)) / 100
+        );
     }
 
     function calculateMiningOutput(uint256 _citadelId, uint256 _gridId, uint256 claimTime) public view returns (uint256) {
