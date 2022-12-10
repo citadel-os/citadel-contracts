@@ -7,7 +7,7 @@ const { ethers } = require("hardhat");
 chai.use(solidity);
 
 describe("combat engine v1", function () {
-    const ETH_DIVISOR = 1000000000000000000;
+
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
         this.PilotNFT = await ethers.getContractFactory("PilotNFT");
@@ -121,21 +121,157 @@ describe("combat engine v1", function () {
         expect(op).to.equal(expectedOP);
       });
 
-      it.only("get basic dp", async function () {
+      /*
+        citadel 40
+          - weapons telum furor index 2
+          - engine chobbakk index 1
+          - shield xcid ma index 1
+        calculateBaseCitadelMultiple weapons = 12%
+        calculateBaseCitadelMultiple shield = 11%
+        swarm multiple 8% = 6% + 2%
+        siege multiple 12% = 10% + 2%
+      */
+      it("get basic dp citadel 40", async function () {
         [owner, addr1] = await ethers.getSigners();
         let sifGattaca = 10;
-        let mhrudvogThrot = 500;
+        let mhrudvogThrot = 100;
         let drebentraakht = 5;
         let pilot = [];
   
-        let expectedDP = (sifGattaca * sifGattacaDP) + 
-          (mhrudvogThrot * mhrudvogThrotDP) +
-          (drebentraakht * drebentraakhtDP);
-        let dp = await this.combatEngineV1.combatDP(0, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
-        console.log(dp, expectedDP);
+        let expectedDP = Math.floor(Math.floor(Math.floor((sifGattaca * sifGattacaDP) * 1.08) + 
+          Math.floor(mhrudvogThrot * mhrudvogThrotDP) +
+          (Math.floor(drebentraakht * drebentraakhtDP)) * 1.12) * 1.23);
+        let dp = await this.combatEngineV1.combatDP(40, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
         
-        //expect(dp).to.equal(expectedDP);
+        expect(dp).to.equal(Math.round(expectedDP));
       });
+
+  
+      /*
+        citadel 1023
+          - weapons marbhadh ghxst index 6
+          - engine drednaught index 7
+          - shield marbhadh greine index 7
+        calculateBaseCitadelMultiple weapons = 25%
+        calculateBaseCitadelMultiple shield = 35%
+        swarm multiple 25%
+        siege multiple 10%
+        pilot 40%
+      */
+      it("get basic dp citadel 1023", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        let sifGattaca = 10;
+        let mhrudvogThrot = 200;
+        let drebentraakht = 5;
+        let pilot = [1,2];
+  
+        let expectedDP = Math.floor(Math.floor(Math.floor((sifGattaca * sifGattacaDP) * 1.25) + 
+          Math.floor(mhrudvogThrot * mhrudvogThrotDP) +
+          (Math.floor(drebentraakht * drebentraakhtDP)) * 1.1) * 2);
+        let dp = await this.combatEngineV1.combatDP(1023, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+        expect(dp).to.equal(Math.floor(expectedDP));
+      });
+
+      /*
+        citadel 193
+          - weapons rrakatakht furor index 0
+          - engine hag gotar index 0
+          - shield dag sgiath index 0
+        calculateBaseCitadelMultiple weapons = 10%
+        calculateBaseCitadelMultiple shield = 10%
+        swarm multiple 5%
+        siege multiple 5%
+        pilot 20%
+      */
+      it("get basic dp citadel 193", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        let sifGattaca = 10;
+        let mhrudvogThrot = 250;
+        let drebentraakht = 8;
+        let pilot = [1];
+  
+        let expectedDP = Math.floor(Math.floor(Math.floor((sifGattaca * sifGattacaDP) * 1.06) + 
+          Math.floor(mhrudvogThrot * mhrudvogThrotDP) +
+          (Math.floor(drebentraakht * drebentraakhtDP)) * 1.06) * 1.4);
+        let dp = await this.combatEngineV1.combatDP(193, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+        expect(dp).to.equal(Math.floor(expectedDP));
+      });
+
+      /*
+        citadel 1021
+          - weapons halmahher furor index 3
+          - engine dsgill mak index 6
+          - shield daskenwaft index 5
+        calculateBaseCitadelMultiple weapons = 15%
+        calculateBaseCitadelMultiple shield = 20%
+        swarm multiple 15% + 7% = 22%
+        siege multiple 0%
+        pilot 20%
+      */
+      it("get basic dp citadel 1021", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        let sifGattaca = 10;
+        let mhrudvogThrot = 250;
+        let drebentraakht = 8;
+        let pilot = [1];
+  
+        let expectedDP = Math.floor(Math.floor(Math.floor((sifGattaca * sifGattacaDP) * 1.22) + 
+          Math.floor(mhrudvogThrot * mhrudvogThrotDP) +
+          (Math.floor(drebentraakht * drebentraakhtDP)) * 1) * 1.55);
+        let dp = await this.combatEngineV1.combatDP(1021, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+        expect(dp).to.equal(Math.floor(expectedDP));
+      });
+
+    });
+
+    describe("grid", function () {
+
+      beforeEach(async function () {
+
+      });
+
+      it("calculates grid distance", async function () {
+
+        let dist0 = await this.combatEngineV1.calculateGridDistance(0, 31);
+        expect(dist0).to.equal(31);
+
+        let dist1 = await this.combatEngineV1.calculateGridDistance(0, 66);
+        expect(dist1).to.equal(2);
+
+        let dist3 = await this.combatEngineV1.calculateGridDistance(31, 95);
+        expect(dist3).to.equal(2);
+
+        let dist4 = await this.combatEngineV1.calculateGridDistance(95, 31);
+        expect(dist4).to.equal(2);
+
+        let dist5 = await this.combatEngineV1.calculateGridDistance(0, 1023);
+        expect(dist5).to.equal(43);
+
+        let dist6 = await this.combatEngineV1.calculateGridDistance(0, 106);
+        expect(dist6).to.equal(10);
+
+      });
+
+
+      it("calculates grid multiple", async function () {
+
+        let multiple0 = await this.combatEngineV1.getGridMultiple(0);
+        expect(multiple0).to.equal(0);
+
+        let multiple1 = await this.combatEngineV1.getGridMultiple(410);
+        expect(multiple1).to.equal(10);
+
+        let multiple2 = await this.combatEngineV1.getGridMultiple(460);
+        expect(multiple2).to.equal(20);
+
+        let multiple3 = await this.combatEngineV1.getGridMultiple(512);
+        expect(multiple3).to.equal(25);
+
+        let multiple4 = await this.combatEngineV1.getGridMultiple(1023);
+        expect(multiple4).to.equal(0);
+
+      });
+
     });
 
 

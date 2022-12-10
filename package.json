@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "@alch/alchemy-web3": "^1.1.9",
-    "@openzeppelin/contracts": "^4.4.1",
+    "@openzeppelin/contracts": "^4.8.0",
     "@openzeppelin/contracts-upgradeable": "^4.4.1",
     "dotenv": "^10.0.0",
     "truffle-flattener": "^1.6.0",

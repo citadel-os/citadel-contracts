@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface IPILOT {
     function getOnchainPILOT(uint256 tokenId) external view returns (bool, uint8);
@@ -25,7 +26,7 @@ contract CombatEngineV1 {
     uint256 public mhrudvogThrotDP = 40;
     uint256 public drebentraakhtDP = 250;
 
-    uint256 periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
+    uint256 periodFinish = 1674943200; //JAN 28 2023, 2PM PT
     
     constructor(IPILOT _pilotCollection) {
         pilotCollection = _pilotCollection;
@@ -59,10 +60,9 @@ contract CombatEngineV1 {
 
         multiple += calculateBaseCitadelMultiple(weaponsProp[_citadelId]);
         multiple += calculateBaseCitadelMultiple(shieldProp[_citadelId]);
-        
-        (swarmMultiple, siegeMultiple) = calculateUniqueBonus(weaponsProp[_citadelId], engineProp[_citadelId], shieldProp[_citadelId]);
 
-        return ((
+        (swarmMultiple, siegeMultiple) = calculateUniqueBonus(weaponsProp[_citadelId], engineProp[_citadelId], shieldProp[_citadelId]);
+        uint256 dp = ((
             (
                 ((_sifGattaca * sifGattacaDP) * (100 + swarmMultiple) / 100) +
                 (_mhrudvogThrot * mhrudvogThrotDP) +
@@ -70,14 +70,15 @@ contract CombatEngineV1 {
             ) 
             * (100 + multiple)) / 100
         );
+        return dp;
     }
 
-    function calculateMiningOutput(uint256 _citadelId, uint256 _gridId, uint256 claimTime) public view returns (uint256) {
+    function calculateMiningOutput(uint256 _citadelId, uint256 _gridId, uint256 lastClaimTime) public view returns (uint256) {
         uint256 miningMultiple = calculateMiningMultiple(engineProp[_citadelId], shieldProp[_citadelId]);
         return (
-            ((lastTimeRewardApplicable() - claimTime) *
-                ((baseMiningRatePerHour * (getGridMultiple(_gridId) / 10)) / 3600) *
-                (miningMultiple / 100))
+            ((lastTimeRewardApplicable() - lastClaimTime) *
+                ((baseMiningRatePerHour * ((100 + getGridMultiple(_gridId)) / 100)) / 3600) *
+                ((100 + miningMultiple) / 100))
         );
     }
 
@@ -115,7 +116,7 @@ contract CombatEngineV1 {
         } else if (weapon == 4) {
             siegeMultiple += 7;
         } else if (weapon == 6) {
-            swarmMultiple += 10;
+            siegeMultiple += 10;
         }
 
         if (shield == 0) {
@@ -167,12 +168,12 @@ contract CombatEngineV1 {
 
     function getGridMultiple(uint256 _gridId) public view returns (uint256) {
         uint8 multiple = 0;
-        if(_gridId >= 400 && _gridId <= 600) {
-            multiple = 1;
-            if(_gridId >= 450 && _gridId <= 550) {
-                multiple = 2; 
+        if(_gridId >= 410 && _gridId <= 615) {
+            multiple = 10;
+            if(_gridId >= 460 && _gridId <= 564) {
+                multiple = 20; 
             }
-            if(_gridId >= 475 && _gridId <= 525) {
+            if(_gridId >= 487 && _gridId <= 537) {
                 multiple = 25;
             }
         }
@@ -180,20 +181,9 @@ contract CombatEngineV1 {
         return multiple;
     }
 
-    function calculateGridDistance(uint256 _fromGridId, uint256 _toGridId) public view returns (uint256) {
-        uint256 higher;
-        uint256 lower;
-        if(_fromGridId >= _toGridId) {
-            higher = _fromGridId;
-            lower = _toGridId;
-        } else {
-            higher = _toGridId;
-            lower = _fromGridId;
-        }
+    function calculateGridDistance(uint256 _a, uint256 _b) public view returns (uint256) {
 
-        return (
-            (higher % 32) + (higher / lower)
-        );
+        return Math.sqrt(uint256((int(_a % 32) - int(_b % 32))**2 + (int(_a / 32) - int(_b / 32))**2));
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
