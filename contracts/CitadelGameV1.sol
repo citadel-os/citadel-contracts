@@ -174,7 +174,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].timeOfLastClaim = lastTimeRewardApplicable();
     }
 
-    function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant returns (uint256) {
+    function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
         require(
             citadel[_citadelId].walletAddress == msg.sender,
             "must own lit citadel to raid"
@@ -206,9 +206,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleet[_citadelId].trainingFleet.sifGattaca = _sifGattaca;
         fleet[_citadelId].trainingFleet.mhrudvogThrot = _mhrudvogThrot;
         fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
-        
-
-        return fleet[_citadelId].trainingDone;
     }
 
     function sendRaid(uint256 _fromCitadel, uint256 _toCitadel, uint256[] calldata _pilot, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant returns (uint256) {

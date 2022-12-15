@@ -176,7 +176,7 @@ describe("citadel game v1", function () {
       });
     });
 
-    describe.only("dims from grid", function () {
+    describe("dims from grid", function () {
 
       beforeEach(async function () {
         await this.pilotNFT.reservePILOT(256);
@@ -274,6 +274,157 @@ describe("citadel game v1", function () {
         ownerOfPilot2 = await this.pilotNFT.ownerOf(2);
         expect(ownerOfPilot2).to.equal(this.citadelGameV1.address);
       });
+
+      it("reverts dim of unlit citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 40);
+
+        await expectRevert(
+          this.citadelGameV1.dimGrid(40),
+          "must own lit citadel to withdraw"
+        );
+
+        ownerOfCitadel40 = await this.citadelNFT.ownerOf(40);
+        expect(ownerOfCitadel40).to.equal(owner.address);
+
+        var drakmaBalance = await this.drakma.balanceOf(owner.address);
+        expect(Number(drakmaBalance.toString())).to.equal(0);
+        
+      });
+    });
+
+    describe("claims drakma from grid", function () {
+
+      beforeEach(async function () {
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
+      });
+
+      it("withdraws citadel and pilot from grid", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 40);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 1);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 2);
+
+        await this.citadelGameV1.liteGrid(40, [1,2], 512, 1);
+
+        await this.citadelGameV1.claim(40);
+        ownerOfCitadel40 = await this.citadelNFT.ownerOf(40);
+        expect(ownerOfCitadel40).to.equal(this.citadelGameV1.address);
+
+        var drakmaBalance = await this.drakma.balanceOf(owner.address);
+        expect(Number(drakmaBalance.toString())).to.be.greaterThan(0);
+
+        [
+          walletAddress,
+          gridId,
+          factionId,
+          pilotCount,
+          isLit,
+          fleetPoints
+        ] = await this.citadelGameV1.getCitadel(40);
+        expect(walletAddress).to.equal(owner.address);
+        expect(gridId).to.equal(512);
+        expect(factionId).to.equal(1);
+        expect(pilotCount).to.equal(2);
+        expect(isLit).to.equal(true);
+        expect(fleetPoints).to.equal(0);
+
+        [
+          timeOfLastClaim,
+          timeOfLastRaid,
+          timeOfLastRaidClaim,
+          unclaimedDrakma,
+          isOnline,
+          timeWentOffline
+        ] = await this.citadelGameV1.getCitadelMining(40);
+        expect(Number(timeOfLastClaim.toString())).to.be.greaterThan(0);
+        expect(Number(timeOfLastRaid.toString())).to.be.greaterThan(0);
+        expect(Number(timeOfLastRaidClaim.toString())).to.be.greaterThan(0);
+        expect(unclaimedDrakma).to.equal(0);
+        expect(isOnline).to.equal(true);
+        expect(timeWentOffline).to.equal(0);
+
+        gridLit = await this.citadelGameV1.getGrid(512);
+        expect(gridLit).to.equal(true);
+      });
+
+      it("reverts claim of unowned citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 40);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 1);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 2);
+
+        await this.citadelGameV1.liteGrid(40, [1,2], 512, 1);
+
+
+        await expectRevert(
+          this.citadelGameV1.connect(addr1).claim(40),
+          "must own citadel to claim"
+        );
+
+        ownerOfCitadel40 = await this.citadelNFT.ownerOf(40);
+        expect(ownerOfCitadel40).to.equal(this.citadelGameV1.address);
+        
+        ownerOfPilot1 = await this.pilotNFT.ownerOf(1);
+        expect(ownerOfPilot1).to.equal(this.citadelGameV1.address);
+
+        ownerOfPilot2 = await this.pilotNFT.ownerOf(2);
+        expect(ownerOfPilot2).to.equal(this.citadelGameV1.address);
+      });
+
+      it("reverts claim of dim citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await expectRevert(
+          this.citadelGameV1.connect(addr1).claim(40),
+          "must own citadel to claim"
+        );
+      });
+    });
+
+    describe.only("train fleet", function () {
+      var sifGattacaPrice = 0; //20
+      var mhrudvogThrotPrice = 0; //40
+      var drebentraakhtPrice = 0; //800
+
+      beforeEach(async function () {
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
+        sifGattacaPrice = await this.citadelGameV1.sifGattacaPrice();
+        mhrudvogThrotPrice = await this.citadelGameV1.mhrudvogThrotPrice();
+        drebentraakhtPrice = await this.citadelGameV1.drebentraakhtPrice();
+      });
+
+      /*
+        1000 sif gattaca = 20000 dk
+        200 mhrudvog throt = 8000 dk
+        50 drebentraakht = 40000 dk
+        68000 total dk
+      */
+      it("trains 1250 fleet", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.drakma.mintDrakma(owner.address, "68000000000000000000000");
+        await this.drakma.approve(this.citadelGameV1.address, "68000000000000000000000");
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 40);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 1);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 2);
+
+        await this.citadelGameV1.liteGrid(40, [1,2], 512, 1);
+
+        await this.citadelGameV1.trainFleet(40, 1000, 200, 50);
+
+        var drakmaBalance = await this.drakma.balanceOf(owner.address);
+        expect(Number(drakmaBalance.toString())).to.equal(0);
+
+      });
+
+
     });
 
 
