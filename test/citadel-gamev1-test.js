@@ -422,6 +422,23 @@ describe("citadel game v1", function () {
         var drakmaBalance = await this.drakma.balanceOf(owner.address);
         expect(Number(drakmaBalance.toString())).to.equal(0);
 
+        [
+          sifGattaca,
+          mhrudvogThrot,
+          drebentraakht
+        ] = await this.citadelGameV1.getCitadelFleetCount(40);
+        expect(sifGattaca).to.equal(0);
+        expect(mhrudvogThrot).to.equal(0);
+        expect(drebentraakht).to.equal(0);
+
+        [
+          sifGattaca,
+          mhrudvogThrot,
+          drebentraakht
+        ] = await this.citadelGameV1.getCitadelFleetCountTraining(40);
+        expect(sifGattaca).to.equal(1000);
+        expect(mhrudvogThrot).to.equal(200);
+        expect(drebentraakht).to.equal(50);
       });
 
 

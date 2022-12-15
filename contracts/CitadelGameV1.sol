@@ -359,6 +359,19 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 sifGattaca = fleet[_citadelId].fleet.sifGattaca;
         uint256 mhrudvogThrot = fleet[_citadelId].fleet.mhrudvogThrot;
         uint256 drebentraakht = fleet[_citadelId].fleet.drebentraakht;
+        if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
+            sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
+            mhrudvogThrot += fleet[_citadelId].trainingFleet.mhrudvogThrot;
+            drebentraakht += fleet[_citadelId].trainingFleet.drebentraakht;
+        }
+        
+        return (sifGattaca, mhrudvogThrot, drebentraakht);
+    }
+
+    function getCitadelFleetCountTraining(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
+        uint256 sifGattaca = 0;
+        uint256 mhrudvogThrot = 0;
+        uint256 drebentraakht = 0;
         if(fleet[_citadelId].trainingDone >= lastTimeRewardApplicable()) {
             sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
             mhrudvogThrot += fleet[_citadelId].trainingFleet.mhrudvogThrot;
