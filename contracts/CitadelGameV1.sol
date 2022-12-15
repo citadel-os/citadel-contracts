@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 interface ICOMBATENGINE {
     function combatOP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external view returns (uint256);
@@ -36,7 +37,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         bool isLit;
         bool isOnline;
         uint256 timeWentOffline;
-        uint8 shieldPower;
         uint256 fleetPoints;
     }
 
@@ -66,6 +66,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     mapping(uint256 => CitadelStaked) public citadel; // index is _citadelId
     mapping(uint256 => AllFleet) public fleet; // index is _citadelId
     mapping(uint256 => Raid) public raids; // index is _fromCitadelId
+    mapping(uint256 => bool) public grid; // index is _gridId
 
     //variables
     uint256 periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
@@ -98,33 +99,37 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             citadelCollection.ownerOf(_citadelId) == msg.sender,
             "must own citadel to stake"
         );
-        require(citadel[_citadelId].isLit == false, "grid cannot be lit");
-        require(_gridId <= maxGrid, "invalid grid");
+        require(grid[_gridId] == false, "grid already lit");
+        require(_gridId <= maxGrid && _gridId != 0, "invalid grid");
         require(_factionId <= maxFaction, "invalid faction");
-
-        citadelCollection.transferFrom(msg.sender, address(this), _citadelId);
-
-        citadel[_citadelId].walletAddress = msg.sender;
-        citadel[_citadelId].gridId = _gridId;
-        citadel[_citadelId].factionId = _factionId;
-        citadel[_citadelId].timeOfLastClaim = lastTimeRewardApplicable();
-        citadel[_citadelId].timeOfLastRaid = lastTimeRewardApplicable();
-        citadel[_citadelId].isLit = true;
-        citadel[_citadelId].isOnline = true;
-        citadel[_citadelId].shieldPower = 100;
-        if(!fleet[_citadelId].isValue) {
-            fleet[_citadelId].isValue = true;
-            fleet[_citadelId].fleet = Fleet(0,0,0,true);
-        }
-
         for (uint256 i; i < _pilotIds.length; ++i) {
             require(
                 pilotCollection.ownerOf(_pilotIds[i]) == msg.sender,
                 "must own pilot to stake"
             );
+        }
+
+        citadelCollection.transferFrom(msg.sender, address(this), _citadelId);
+        for (uint256 i; i < _pilotIds.length; ++i) {
             pilotCollection.transferFrom(msg.sender, address(this), _pilotIds[i]);
             citadel[_citadelId].pilot.push(_pilotIds[i]);
         }
+
+        uint256 blockTimeNow = lastTimeRewardApplicable();
+        citadel[_citadelId].walletAddress = msg.sender;
+        citadel[_citadelId].gridId = _gridId;
+        citadel[_citadelId].factionId = _factionId;
+        citadel[_citadelId].timeOfLastClaim = blockTimeNow;
+        citadel[_citadelId].timeOfLastRaid = blockTimeNow;
+        citadel[_citadelId].timeOfLastRaidClaim = blockTimeNow;
+        citadel[_citadelId].isLit = true;
+        citadel[_citadelId].isOnline = true;
+        citadel[_citadelId].fleetPoints = 0;
+        if(!fleet[_citadelId].isValue) {
+            fleet[_citadelId].isValue = true;
+            fleet[_citadelId].fleet = Fleet(0,0,0,true);
+        }
+        grid[_gridId] = true;
     }
 
     function dimGrid(uint256 _citadelId) external nonReentrant {
@@ -139,17 +144,34 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         }
         citadelCollection.transferFrom(address(this), msg.sender, _citadelId);
 
+        grid[citadel[_citadelId].gridId] = false;
         citadel[_citadelId].walletAddress = 0x0000000000000000000000000000000000000000;
         citadel[_citadelId].gridId = 0;
         citadel[_citadelId].factionId = 0;
         citadel[_citadelId].timeOfLastClaim = 0;
         citadel[_citadelId].timeOfLastRaid = 0;
+        citadel[_citadelId].timeOfLastRaidClaim = 0;
         citadel[_citadelId].isLit = false;
         citadel[_citadelId].isOnline = false;
+        citadel[_citadelId].timeWentOffline = 0;
+        delete citadel[_citadelId].pilot;
     }
 
     function claim(uint256 _citadelId) external nonReentrant {
+        require(
+            citadel[_citadelId].walletAddress == msg.sender,
+            "must own citadel to claim"
+        );
         claimInternal(_citadelId);
+    }
+
+    function claimInternal(uint256 _citadelId) internal {
+        require(citadel[_citadelId].timeOfLastClaim > 0, "cannot claim unlit citadel");
+        uint256 claimTime = citadel[_citadelId].timeOfLastRaidClaim > citadel[_citadelId].timeOfLastClaim ? citadel[_citadelId].timeOfLastRaidClaim : citadel[_citadelId].timeOfLastClaim; 
+        uint256 minedDrakma = combatEngine.calculateMiningOutput(_citadelId, citadel[_citadelId].gridId, claimTime);
+        require(minedDrakma > 0, "you have no drakma mined");
+        drakma.safeTransfer(msg.sender, minedDrakma);
+        citadel[_citadelId].timeOfLastClaim = lastTimeRewardApplicable();
     }
 
     function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant returns (uint256) {
@@ -325,19 +347,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         }
     }
 
-    function claimInternal(uint256 _citadelId) internal {
-        require(citadel[_citadelId].timeOfLastClaim > 0, "cannot claim unlit citadel");
-        require(
-            citadelCollection.ownerOf(_citadelId) == msg.sender,
-            "must own citadel to claim"
-        );
-        uint256 claimTime = citadel[_citadelId].timeOfLastRaidClaim > citadel[_citadelId].timeOfLastClaim ? citadel[_citadelId].timeOfLastRaidClaim : citadel[_citadelId].timeOfLastClaim; 
-        uint256 minedDrakma = combatEngine.calculateMiningOutput(_citadelId, citadel[_citadelId].gridId, claimTime);
-        require(minedDrakma > 0, "you have no drakma mined");
-        drakma.safeTransfer(msg.sender, minedDrakma);
-        citadel[_citadelId].timeOfLastClaim = lastTimeRewardApplicable();
-    }
-
     // only owner
     function withdrawDrakma(uint256 amount) external onlyOwner {
         drakma.safeTransfer(msg.sender, amount);
@@ -360,5 +369,33 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         }
         
         return (sifGattaca, mhrudvogThrot, drebentraakht);
+    }
+
+    function getCitadel(uint256 _citadelId) public view returns (address, uint256, uint8, uint256, bool, uint256) {
+        return (
+                citadel[_citadelId].walletAddress,
+                citadel[_citadelId].gridId,
+                citadel[_citadelId].factionId,
+                citadel[_citadelId].pilot.length,
+                citadel[_citadelId].isLit,
+                citadel[_citadelId].fleetPoints
+        );
+    }
+
+    function getCitadelMining(uint256 _citadelId) public view returns (uint256, uint256, uint256, uint256, bool, uint256) {
+        return (
+                citadel[_citadelId].timeOfLastClaim,
+                citadel[_citadelId].timeOfLastRaid,
+                citadel[_citadelId].timeOfLastRaidClaim,
+                citadel[_citadelId].unclaimedDrakma,
+                citadel[_citadelId].isOnline,
+                citadel[_citadelId].timeWentOffline
+        );
+    }
+
+    function getGrid(uint256 _gridId) public view returns (bool) {
+        return (
+                grid[_gridId]
+        );
     }
 }
