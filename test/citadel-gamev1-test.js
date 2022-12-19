@@ -506,7 +506,7 @@ describe("citadel game v1", function () {
 
     });
 
-    describe.only("raiding", function () {
+    describe("raiding", function () {
 
       beforeEach(async function () {
         [owner, addr1] = await ethers.getSigners();
@@ -534,7 +534,7 @@ describe("citadel game v1", function () {
 
       });
 
-      it("sends raid from 40 to 1023", async function () {
+      it("sends direct neighbor raid from 40 to 1023", async function () {
         [owner, addr1] = await ethers.getSigners();
 
         await this.citadelGameV1.sendRaid(40, 1023, [], 10, 0, 0);
@@ -559,7 +559,7 @@ describe("citadel game v1", function () {
 
       });
 
-      it("sends raid from 1023 to 40", async function () {
+      it("sends direct neighbor raid from 1023 to 40", async function () {
         [owner, addr1] = await ethers.getSigners();
 
         await this.citadelGameV1.connect(addr1).sendRaid(1023, 40, [3,4], 10, 0, 0);
@@ -604,8 +604,62 @@ describe("citadel game v1", function () {
 
         drakmaAddr1 = await this.drakma.balanceOf(addr1.address);
         expect(Number(drakmaAddr1.toString())).to.be.greaterThan(0);
+      });
 
+      it.only("sends distant raid from 1023 to 1021", async function () {
+        [owner, addr1] = await ethers.getSigners();
 
+        await this.citadelGameV1.connect(addr1).sendRaid(1023, 1021, [3,4], 10, 0, 0);
+
+        [
+          sifGattaca1023,
+          mhrudvogThrot1023,
+          drebentraakht1023
+        ] = await this.citadelGameV1.getCitadelFleetCount(1023);
+        expect(Number(sifGattaca1023.toString())).to.equal(0);
+        expect(Number(mhrudvogThrot1023.toString())).to.equal(2);
+        expect(Number(drebentraakht1023.toString())).to.equal(0);
+
+        [
+          sifGattaca1021,
+          mhrudvogThrot1021,
+          drebentraakht1021
+        ] = await this.citadelGameV1.getCitadelFleetCount(1021);
+        expect(Number(sifGattaca1021.toString())).to.equal(10);
+        expect(Number(mhrudvogThrot1021.toString())).to.equal(2);
+        expect(Number(drebentraakht1021.toString())).to.equal(0);
+
+        [
+          timeOfLastClaim1023,
+          timeOfLastRaid1023,
+          timeLastRaided1023,
+          unclaimedDrakma1023,
+          isOnline1023
+        ] = await this.citadelGameV1.getCitadelMining(1023);
+        expect(isOnline1023).to.equal(false);
+
+        [
+          timeOfLastClaim1021,
+          timeOfLastRaid1021,
+          timeLastRaided1021,
+          unclaimedDrakma1021,
+          isOnline1021
+        ] = await this.citadelGameV1.getCitadelMining(1021);
+        expect(isOnline1021).to.equal(false);
+
+        [
+          toCitadel,
+          sifGattacaRaid,
+          mhrudvogThrotRaid,
+          drebentraakhtRaid,
+          pilotSentRaid,
+          timeRaidHits,
+        ] = await this.citadelGameV1.getRaid(1023);
+        expect(Number(toCitadel.toString())).to.equal(1021);
+        expect(Number(sifGattacaRaid.toString())).to.equal(10);
+        expect(Number(drebentraakhtRaid.toString())).to.equal(0);
+        expect(Number(pilotSentRaid.toString())).to.equal(2);
+        expect(Number(timeRaidHits.toString())).to.greaterThan(Number(timeLastRaided1021.toString()))
       });
 
     });

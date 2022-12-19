@@ -359,7 +359,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             mhrudvogThrot += fleet[_citadelId].trainingFleet.mhrudvogThrot;
             drebentraakht += fleet[_citadelId].trainingFleet.drebentraakht;
         }
-        
         return (sifGattaca, mhrudvogThrot, drebentraakht);
     }
 
@@ -400,6 +399,17 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     function getGrid(uint256 _gridId) public view returns (bool) {
         return (
                 grid[_gridId]
+        );
+    }
+
+    function getRaid(uint256 _fromCitadelId) public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
+        return (
+                raids[_fromCitadelId].toCitadel,
+                raids[_fromCitadelId].fleet.sifGattaca,
+                raids[_fromCitadelId].fleet.mhrudvogThrot,
+                raids[_fromCitadelId].fleet.drebentraakht,
+                raids[_fromCitadelId].pilot.length,
+                raids[_fromCitadelId].timeRaidHits
         );
     }
 }
