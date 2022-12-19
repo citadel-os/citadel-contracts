@@ -100,15 +100,13 @@ describe("citadel game v1", function () {
           timeOfLastRaid,
           timeOfLastRaidClaim,
           unclaimedDrakma,
-          isOnline,
-          timeWentOffline
+          isOnline
         ] = await this.citadelGameV1.getCitadelMining(40);
         expect(Number(timeOfLastClaim.toString())).to.be.greaterThan(0);
         expect(Number(timeOfLastRaid.toString())).to.be.greaterThan(0);
         expect(Number(timeOfLastRaidClaim.toString())).to.be.greaterThan(0);
         expect(unclaimedDrakma).to.equal(0);
         expect(isOnline).to.equal(true);
-        expect(timeWentOffline).to.equal(0);
       });
 
       it("reverts unowned citadel staked", async function () {
@@ -236,15 +234,13 @@ describe("citadel game v1", function () {
           timeOfLastRaid,
           timeOfLastRaidClaim,
           unclaimedDrakma,
-          isOnline,
-          timeWentOffline
+          isOnline
         ] = await this.citadelGameV1.getCitadelMining(40);
         expect(Number(timeOfLastClaim.toString())).to.equal(0);
         expect(Number(timeOfLastRaid.toString())).to.equal(0);
         expect(Number(timeOfLastRaidClaim.toString())).to.equal(0);
         expect(unclaimedDrakma).to.equal(0);
         expect(isOnline).to.equal(false);
-        expect(timeWentOffline).to.equal(0);
 
         gridLit = await this.citadelGameV1.getGrid(512);
         expect(gridLit).to.equal(false);
@@ -337,15 +333,13 @@ describe("citadel game v1", function () {
           timeOfLastRaid,
           timeOfLastRaidClaim,
           unclaimedDrakma,
-          isOnline,
-          timeWentOffline
+          isOnline
         ] = await this.citadelGameV1.getCitadelMining(40);
         expect(Number(timeOfLastClaim.toString())).to.be.greaterThan(0);
         expect(Number(timeOfLastRaid.toString())).to.be.greaterThan(0);
         expect(Number(timeOfLastRaidClaim.toString())).to.be.greaterThan(0);
         expect(unclaimedDrakma).to.equal(0);
         expect(isOnline).to.equal(true);
-        expect(timeWentOffline).to.equal(0);
 
         gridLit = await this.citadelGameV1.getGrid(512);
         expect(gridLit).to.equal(true);
@@ -386,7 +380,7 @@ describe("citadel game v1", function () {
       });
     });
 
-    describe.only("train fleet", function () {
+    describe("train fleet", function () {
       var sifGattacaPrice = 0; //20
       var mhrudvogThrotPrice = 0; //40
       var drebentraakhtPrice = 0; //800
@@ -427,8 +421,76 @@ describe("citadel game v1", function () {
           mhrudvogThrot,
           drebentraakht
         ] = await this.citadelGameV1.getCitadelFleetCount(40);
-        expect(sifGattaca).to.equal(0);
-        expect(mhrudvogThrot).to.equal(0);
+        expect(sifGattaca).to.equal(10);
+        expect(mhrudvogThrot).to.equal(2);
+        expect(drebentraakht).to.equal(0);
+
+        [
+          sifGattaca,
+          mhrudvogThrot,
+          drebentraakht
+        ] = await this.citadelGameV1.getCitadelFleetCountTraining(40);
+        expect(sifGattaca).to.equal(1000);
+        expect(mhrudvogThrot).to.equal(200);
+        expect(drebentraakht).to.equal(50);
+      });
+      
+      /*
+        2000 sif gattaca = 40000 dk
+        200 mhrudvog throt = 16000 dk
+        50 drebentraakht = 80000 dk
+        136000 total dk
+      */
+      it("reverts double train of fleet", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.drakma.mintDrakma(owner.address, "136000000000000000000000");
+        await this.drakma.approve(this.citadelGameV1.address, "136000000000000000000000");
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 40);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 1);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 2);
+
+        await this.citadelGameV1.liteGrid(40, [1,2], 512, 1);
+
+        await this.citadelGameV1.trainFleet(40, 1000, 200, 50);
+
+        var drakmaBalance = await this.drakma.balanceOf(owner.address);
+        expect(Number(drakmaBalance.toString())).to.equal(68000000000000000000000);
+
+        [
+          sifGattaca,
+          mhrudvogThrot,
+          drebentraakht
+        ] = await this.citadelGameV1.getCitadelFleetCount(40);
+        expect(sifGattaca).to.equal(10);
+        expect(mhrudvogThrot).to.equal(2);
+        expect(drebentraakht).to.equal(0);
+
+        [
+          sifGattaca,
+          mhrudvogThrot,
+          drebentraakht
+        ] = await this.citadelGameV1.getCitadelFleetCountTraining(40);
+        expect(sifGattaca).to.equal(1000);
+        expect(mhrudvogThrot).to.equal(200);
+        expect(drebentraakht).to.equal(50);
+
+        await expectRevert(
+          this.citadelGameV1.trainFleet(40, 1000, 200, 50),
+          "cannot train new fleet until previous has finished"
+        );
+
+        var drakmaBalance = await this.drakma.balanceOf(owner.address);
+        expect(Number(drakmaBalance.toString())).to.equal(68000000000000000000000);
+
+        [
+          sifGattaca,
+          mhrudvogThrot,
+          drebentraakht
+        ] = await this.citadelGameV1.getCitadelFleetCount(40);
+        expect(sifGattaca).to.equal(10);
+        expect(mhrudvogThrot).to.equal(2);
         expect(drebentraakht).to.equal(0);
 
         [
@@ -441,6 +503,110 @@ describe("citadel game v1", function () {
         expect(drebentraakht).to.equal(50);
       });
 
+
+    });
+
+    describe.only("raiding", function () {
+
+      beforeEach(async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 40);
+        await this.citadelGameV1.liteGrid(40, [], 512, 1);
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 1021);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 1);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 2);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 5);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 6);
+        await this.citadelGameV1.liteGrid(1021, [1,2,5,6], 1, 1);
+
+        await this.citadelNFT.transferFrom(owner.address, addr1.address, 1023);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 3);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 4);
+        await this.citadelNFT.connect(addr1).approve(this.citadelGameV1.address, 1023);
+        await this.pilotNFT.connect(addr1).approve(this.citadelGameV1.address, 3);
+        await this.pilotNFT.connect(addr1).approve(this.citadelGameV1.address, 4);
+
+        await this.citadelGameV1.connect(addr1).liteGrid(1023, [3,4], 513, 2);
+
+      });
+
+      it("sends raid from 40 to 1023", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.sendRaid(40, 1023, [], 10, 0, 0);
+
+        [
+          sifGattaca40,
+          mhrudvogThrot40,
+          drebentraakht40
+        ] = await this.citadelGameV1.getCitadelFleetCount(40);
+        expect(Number(sifGattaca40.toString())).to.be.lessThan(10);
+        expect(Number(mhrudvogThrot40.toString())).to.equal(2);
+        expect(Number(drebentraakht40.toString())).to.equal(0);
+
+        [
+          sifGattaca1023,
+          mhrudvogThrot1023,
+          drebentraakht1023
+        ] = await this.citadelGameV1.getCitadelFleetCount(1023);
+        expect(Number(sifGattaca1023.toString())).to.be.lessThan(10);
+        expect(Number(mhrudvogThrot1023.toString())).to.be.lessThanOrEqual(2);
+        expect(Number(drebentraakht1023.toString())).to.equal(0);
+
+      });
+
+      it("sends raid from 1023 to 40", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.connect(addr1).sendRaid(1023, 40, [3,4], 10, 0, 0);
+
+        [
+          sifGattaca1023,
+          mhrudvogThrot1023,
+          drebentraakht1023
+        ] = await this.citadelGameV1.getCitadelFleetCount(1023);
+        expect(Number(sifGattaca1023.toString())).to.be.lessThan(10);
+        expect(Number(mhrudvogThrot1023.toString())).to.be.lessThanOrEqual(2);
+        expect(Number(drebentraakht1023.toString())).to.equal(0);
+
+        [
+          sifGattaca40,
+          mhrudvogThrot40,
+          drebentraakht40
+        ] = await this.citadelGameV1.getCitadelFleetCount(40);
+        expect(Number(sifGattaca40.toString())).to.be.lessThan(10);
+        expect(Number(mhrudvogThrot40.toString())).to.be.lessThanOrEqual(2);
+        expect(Number(drebentraakht40.toString())).to.equal(0);
+
+        [
+          timeOfLastClaim40,
+          timeOfLastRaid40,
+          timeOfLastRaidClaim40,
+          unclaimedDrakma40,
+          isOnline40
+        ] = await this.citadelGameV1.getCitadelMining(40);
+        expect(Number(unclaimedDrakma40.toString())).to.equal(0);
+        expect(isOnline40).to.equal(true);
+
+        [
+          timeOfLastClaim1023,
+          timeOfLastRaid1023,
+          timeOfLastRaidClaim1023,
+          unclaimedDrakma1023,
+          isOnline1023
+        ] = await this.citadelGameV1.getCitadelMining(1023);
+        expect(Number(unclaimedDrakma1023.toString())).to.be.greaterThan(0);
+        expect(isOnline1023).to.equal(true);
+
+        drakmaAddr1 = await this.drakma.balanceOf(addr1.address);
+        expect(Number(drakmaAddr1.toString())).to.be.greaterThan(0);
+
+
+      });
 
     });
 

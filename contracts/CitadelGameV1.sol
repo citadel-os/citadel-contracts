@@ -31,12 +31,11 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint8 factionId;
         uint256 timeOfLastClaim;
         uint256 timeOfLastRaid;
-        uint256 timeOfLastRaidClaim;
+        uint256 timeLastRaided;
         uint256 unclaimedDrakma;
         uint256[] pilot;
         bool isLit;
         bool isOnline;
-        uint256 timeWentOffline;
         uint256 fleetPoints;
     }
 
@@ -78,11 +77,11 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     uint256 public sifGattacaTrainingTime = 2 hours;
     uint256 public mhrudvogThrotTrainingTime = 5 hours;
     uint256 public drebentraakhtTrainingTime = 24 hours;
-    uint256 public sifGattacaCary = 10;
-    uint256 public mhrudvogThrotCary = 2;
-    uint256 public drebentraakhtCary = 400;
+    uint256 public sifGattacaCary = 10000000000000000000;
+    uint256 public mhrudvogThrotCary = 2000000000000000000;
+    uint256 public drebentraakhtCary = 400000000000000000000;
     bool public subgridOpen = false;
-    uint256 minFleet = 500;
+    uint256 minFleet = 10;
     uint256 raidMaxExpiry = 24 hours;
     
 
@@ -121,13 +120,13 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].factionId = _factionId;
         citadel[_citadelId].timeOfLastClaim = blockTimeNow;
         citadel[_citadelId].timeOfLastRaid = blockTimeNow;
-        citadel[_citadelId].timeOfLastRaidClaim = blockTimeNow;
+        citadel[_citadelId].timeLastRaided = blockTimeNow;
         citadel[_citadelId].isLit = true;
         citadel[_citadelId].isOnline = true;
         citadel[_citadelId].fleetPoints = 0;
         if(!fleet[_citadelId].isValue) {
             fleet[_citadelId].isValue = true;
-            fleet[_citadelId].fleet = Fleet(0,0,0,true);
+            fleet[_citadelId].fleet = Fleet(10,2,0,true);
         }
         grid[_gridId] = true;
     }
@@ -150,10 +149,9 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].factionId = 0;
         citadel[_citadelId].timeOfLastClaim = 0;
         citadel[_citadelId].timeOfLastRaid = 0;
-        citadel[_citadelId].timeOfLastRaidClaim = 0;
+        citadel[_citadelId].timeLastRaided = 0;
         citadel[_citadelId].isLit = false;
         citadel[_citadelId].isOnline = false;
-        citadel[_citadelId].timeWentOffline = 0;
         delete citadel[_citadelId].pilot;
     }
 
@@ -167,7 +165,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
     function claimInternal(uint256 _citadelId) internal {
         require(citadel[_citadelId].timeOfLastClaim > 0, "cannot claim unlit citadel");
-        uint256 claimTime = citadel[_citadelId].timeOfLastRaidClaim > citadel[_citadelId].timeOfLastClaim ? citadel[_citadelId].timeOfLastRaidClaim : citadel[_citadelId].timeOfLastClaim; 
+        uint256 claimTime = citadel[_citadelId].timeLastRaided > citadel[_citadelId].timeOfLastClaim ? citadel[_citadelId].timeLastRaided : citadel[_citadelId].timeOfLastClaim; 
         uint256 minedDrakma = combatEngine.calculateMiningOutput(_citadelId, citadel[_citadelId].gridId, claimTime);
         require(minedDrakma > 0, "you have no drakma mined");
         drakma.safeTransfer(msg.sender, minedDrakma);
@@ -208,7 +206,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
     }
 
-    function sendRaid(uint256 _fromCitadel, uint256 _toCitadel, uint256[] calldata _pilot, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant returns (uint256) {
+    function sendRaid(uint256 _fromCitadel, uint256 _toCitadel, uint256[] calldata _pilot, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
         require(_fromCitadel != _toCitadel, "cannot raid own citadel");
         require(
             citadel[_fromCitadel].walletAddress == msg.sender,
@@ -262,15 +260,10 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleet[_fromCitadel].fleet.drebentraakht -= _drebentraakht;
         citadel[_fromCitadel].isOnline = false;
         citadel[_toCitadel].isOnline = false;
-        citadel[_fromCitadel].timeWentOffline = timeRaidHits;
-        citadel[_toCitadel].timeWentOffline = timeRaidHits;
 
-        if (gridDistance == 0 || subgridOpen == true) {
+        if (gridDistance == 1 || subgridOpen == true) {
             resolveRaidInternal(_fromCitadel);
-            return timeRaidHits;
         }
-
-        return timeRaidHits;
     }
 
     // public functions
@@ -302,27 +295,29 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 combatDP = combatEngine.combatDP(toCitadel, citadel[toCitadel].pilot, fleet[toCitadel].fleet.sifGattaca, fleet[toCitadel].fleet.mhrudvogThrot, fleet[toCitadel].fleet.drebentraakht);
 
         // calculate fleet damage
-        fleet[toCitadel].fleet.sifGattaca = fleet[toCitadel].fleet.sifGattaca * (combatDP / (combatOP + combatDP));
-        fleet[toCitadel].fleet.mhrudvogThrot = fleet[toCitadel].fleet.mhrudvogThrot * (combatDP / (combatOP + combatDP));
-        fleet[toCitadel].fleet.drebentraakht = fleet[toCitadel].fleet.drebentraakht * (combatDP / (combatOP + combatDP));
+        fleet[toCitadel].fleet.sifGattaca = (fleet[toCitadel].fleet.sifGattaca * combatDP) / (combatOP + combatDP);
+        fleet[toCitadel].fleet.mhrudvogThrot = (fleet[toCitadel].fleet.mhrudvogThrot * combatDP) / (combatOP + combatDP);
+        fleet[toCitadel].fleet.drebentraakht = (fleet[toCitadel].fleet.drebentraakht * combatDP) / (combatOP + combatDP);
 
-        raids[_fromCitadel].fleet.sifGattaca = raids[_fromCitadel].fleet.sifGattaca * (combatOP / (combatOP + combatDP));
-        raids[_fromCitadel].fleet.sifGattaca = raids[_fromCitadel].fleet.sifGattaca * (combatOP / (combatOP + combatDP));
-        raids[_fromCitadel].fleet.sifGattaca = raids[_fromCitadel].fleet.sifGattaca * (combatOP / (combatOP + combatDP));
+        raids[_fromCitadel].fleet.sifGattaca = (raids[_fromCitadel].fleet.sifGattaca * combatOP) / (combatOP + combatDP);
+        raids[_fromCitadel].fleet.mhrudvogThrot = (raids[_fromCitadel].fleet.mhrudvogThrot * combatOP) / (combatOP + combatDP);
+        raids[_fromCitadel].fleet.drebentraakht = (raids[_fromCitadel].fleet.drebentraakht * combatOP) / (combatOP + combatDP);
 
         // transfer dk
-        uint256 claimTime = citadel[_fromCitadel].timeOfLastRaidClaim > citadel[_fromCitadel].timeOfLastClaim ? citadel[_fromCitadel].timeOfLastRaidClaim : citadel[_fromCitadel].timeOfLastClaim; 
-        uint256 drakmaAvailable = combatEngine.calculateMiningOutput(toCitadel, citadel[toCitadel].gridId, claimTime) +
-            citadel[toCitadel].unclaimedDrakma;
+        uint256 claimTime = citadel[toCitadel].timeLastRaided > citadel[toCitadel].timeOfLastClaim ? citadel[toCitadel].timeLastRaided : citadel[toCitadel].timeOfLastClaim;
+        uint256 drakmaAvailable = combatEngine.calculateMiningOutput(toCitadel, citadel[toCitadel].gridId, claimTime) + citadel[toCitadel].unclaimedDrakma;
         uint256 drakmaCarry = (
             (raids[_fromCitadel].fleet.sifGattaca * sifGattacaCary) +
             (raids[_fromCitadel].fleet.mhrudvogThrot * mhrudvogThrotCary) +
             (raids[_fromCitadel].fleet.drebentraakht * drebentraakhtCary)
         );
         uint256 dkToTransfer = drakmaAvailable > drakmaCarry ? drakmaCarry : drakmaAvailable;
+        citadel[toCitadel].unclaimedDrakma += (drakmaAvailable - dkToTransfer);
+        citadel[_fromCitadel].unclaimedDrakma += (dkToTransfer * 9) / 10;
         drakma.safeTransfer(msg.sender, (dkToTransfer / 10));
-        drakma.safeTransfer(citadel[_fromCitadel].walletAddress, ((dkToTransfer * 9) / 10));
-        citadel[_fromCitadel].timeOfLastRaidClaim = lastTimeRewardApplicable();
+        citadel[toCitadel].timeLastRaided = lastTimeRewardApplicable();
+        citadel[toCitadel].isOnline = true;
+        citadel[_fromCitadel].isOnline = true;
         
         // return fleet and empty raid
         fleet[_fromCitadel].fleet.sifGattaca += raids[_fromCitadel].fleet.sifGattaca;
@@ -333,7 +328,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     function resolveTraining(uint256 _citadelId) internal {
-        if(fleet[_citadelId].trainingDone >= lastTimeRewardApplicable()) {
+        if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
             fleet[_citadelId].trainingDone = 0;
             fleet[_citadelId].fleet.sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
             fleet[_citadelId].trainingFleet.sifGattaca = 0;
@@ -392,14 +387,13 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         );
     }
 
-    function getCitadelMining(uint256 _citadelId) public view returns (uint256, uint256, uint256, uint256, bool, uint256) {
+    function getCitadelMining(uint256 _citadelId) public view returns (uint256, uint256, uint256, uint256, bool) {
         return (
                 citadel[_citadelId].timeOfLastClaim,
                 citadel[_citadelId].timeOfLastRaid,
-                citadel[_citadelId].timeOfLastRaidClaim,
+                citadel[_citadelId].timeLastRaided,
                 citadel[_citadelId].unclaimedDrakma,
-                citadel[_citadelId].isOnline,
-                citadel[_citadelId].timeWentOffline
+                citadel[_citadelId].isOnline
         );
     }
 
