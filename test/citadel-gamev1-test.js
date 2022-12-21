@@ -606,7 +606,7 @@ describe("citadel game v1", function () {
         expect(Number(drakmaAddr1.toString())).to.be.greaterThan(0);
       });
 
-      it.only("sends distant raid from 1023 to 1021", async function () {
+      it("sends distant raid from 1023 to 1021", async function () {
         [owner, addr1] = await ethers.getSigners();
 
         await this.citadelGameV1.connect(addr1).sendRaid(1023, 1021, [3,4], 10, 0, 0);
@@ -660,6 +660,83 @@ describe("citadel game v1", function () {
         expect(Number(drebentraakhtRaid.toString())).to.equal(0);
         expect(Number(pilotSentRaid.toString())).to.equal(2);
         expect(Number(timeRaidHits.toString())).to.greaterThan(Number(timeLastRaided1021.toString()))
+      });
+
+      it("reverts raid sent to same citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await expectRevert(
+          this.citadelGameV1.sendRaid(40, 40, [], 10, 0, 0),
+          "cannot raid own citadel"
+        );
+      });
+
+      it("reverts raid sent from un-owned citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await expectRevert(
+          this.citadelGameV1.connect(addr1).sendRaid(40, 1023, [], 10, 0, 0),
+          "must own lit citadel to raid"
+        );
+      });
+
+      it("reverts raid from unlit citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        // put 1021 & 1023 offline
+        await this.citadelGameV1.sendRaid(1021, 1023, [], 10, 0, 0);
+
+        await expectRevert(
+          this.citadelGameV1.sendRaid(1021, 40, [], 10, 0, 0),
+          "attcking citadel must be lit and online to raid"
+        );
+      });
+
+      it("reverts raid to unlit citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        // put 1021 & 1023 offline
+        await this.citadelGameV1.sendRaid(1021, 1023, [], 10, 0, 0);
+
+        await expectRevert(
+          this.citadelGameV1.sendRaid(40, 1023, [], 10, 0, 0),
+          "defending citadel must be lit and online to raid"
+        );
+      });
+
+      it("reverts raid with more fleet than trained", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await expectRevert(
+          this.citadelGameV1.sendRaid(40, 1023, [], 100, 0, 0),
+          "cannot send more fleet than are trained"
+        );
+
+        await expectRevert(
+          this.citadelGameV1.sendRaid(40, 1023, [], 10, 100, 0),
+          "cannot send more fleet than are trained"
+        );
+
+        await expectRevert(
+          this.citadelGameV1.sendRaid(40, 1023, [], 10, 0, 2),
+          "cannot send more fleet than are trained"
+        );
+      });
+
+      it("reverts raid with less than min fleet sent", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await expectRevert(
+          this.citadelGameV1.sendRaid(40, 1023, [], 1, 0, 0),
+          "fleet sent in raid must exceed minimum for raiding"
+        );
+      });
+
+      it("reverts raid with unowned pilot", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await expectRevert(
+          this.citadelGameV1.sendRaid(40, 1023, [3,4], 10, 0, 0),
+          "pilot sent must be staked to raiding citadel"
+        );
       });
 
     });

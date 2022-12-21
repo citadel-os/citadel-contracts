@@ -213,16 +213,12 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             "must own lit citadel to raid"
         );
         require(
-            citadel[_fromCitadel].isLit == true && citadel[_fromCitadel].isOnline == true,
-            "attacking citadel must be lit and online to raid"
+            citadel[_fromCitadel].isOnline == true,
+            "attcking citadel must be lit and online to raid"
         );
         require(
-            citadel[_toCitadel].isLit == true && citadel[_toCitadel].isOnline == true,
+            citadel[_toCitadel].isOnline == true,
             "defending citadel must be lit and online to raid"
-        );
-        require(
-            raids[_fromCitadel].isValue == false,
-            "raids must resolve before another can be sent"
         );
 
         // move fully trained citadel out of training queue
