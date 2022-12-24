@@ -6,7 +6,7 @@ const { ethers } = require("hardhat");
 
 chai.use(solidity);
 
-describe("citadel game v1", function () {
+describe.only("citadel game v1", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
@@ -374,7 +374,7 @@ describe("citadel game v1", function () {
         );
       });
 
-      it.only("reverts second claim inside interval", async function () {
+      it("reverts second claim inside interval", async function () {
         [owner, addr1] = await ethers.getSigners();
 
         await this.citadelNFT.approve(this.citadelGameV1.address, 40);
@@ -567,7 +567,7 @@ describe("citadel game v1", function () {
 
       });
 
-      it("sends direct neighbor raid from 1023 to 40", async function () {
+      it.only("sends direct neighbor raid from 1023 to 40", async function () {
         [owner, addr1] = await ethers.getSigners();
 
         await this.citadelGameV1.connect(addr1).sendRaid(1023, 40, [3,4], 10, 0, 0);
@@ -597,7 +597,7 @@ describe("citadel game v1", function () {
           unclaimedDrakma40,
           isOnline40
         ] = await this.citadelGameV1.getCitadelMining(40);
-        expect(Number(utimeLastRaided40.toString())).to.be.greaterThan(0);
+        expect(Number(timeLastRaided40.toString())).to.be.greaterThan(0);
         expect(Number(unclaimedDrakma40.toString())).to.equal(0);
         expect(isOnline40).to.equal(true);
 

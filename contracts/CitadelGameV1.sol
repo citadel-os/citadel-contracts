@@ -74,16 +74,18 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     uint256 public sifGattacaPrice = 20000000000000000000;
     uint256 public mhrudvogThrotPrice = 40000000000000000000;
     uint256 public drebentraakhtPrice = 800000000000000000000;
-    uint256 public sifGattacaTrainingTime = 2 hours;
-    uint256 public mhrudvogThrotTrainingTime = 5 hours;
-    uint256 public drebentraakhtTrainingTime = 24 hours;
+    uint256 public sifGattacaTrainingTime = 5 minutes;
+    uint256 public mhrudvogThrotTrainingTime = 15 minutes;
+    uint256 public drebentraakhtTrainingTime = 1 hours;
     uint256 public sifGattacaCary = 10000000000000000000;
     uint256 public mhrudvogThrotCary = 2000000000000000000;
     uint256 public drebentraakhtCary = 400000000000000000000;
     uint8 subgridDistortion = 1;
+    uint256 gridTraversalTime = 30 minutes;
     uint256 minFleet = 10;
     uint256 raidMaxExpiry = 24 hours;
     uint256 claimInterval = 7 days;
+    bool escapeHatchOn = false;
     
 
     constructor(IERC721 _citadelCollection, IERC721 _pilotCollection, IERC20 _drakma, ICOMBATENGINE _combatEngine) {
@@ -155,6 +157,19 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         delete citadel[_citadelId].pilot;
     }
 
+    function escapeHatch(uint256 _citadelId) external nonReentrant {
+        require(
+            citadel[_citadelId].walletAddress == msg.sender,
+            "must own lit citadel to withdraw"
+        );
+        require(escapeHatchOn == true, "escapeHatch is off");
+
+        for (uint256 i; i < citadel[_citadelId].pilot.length; ++i) {
+            pilotCollection.transferFrom(address(this), msg.sender, citadel[_citadelId].pilot[i]);
+        }
+        citadelCollection.transferFrom(address(this), msg.sender, _citadelId);
+    }
+
     function claim(uint256 _citadelId) external nonReentrant {
         require(
             citadel[_citadelId].walletAddress == msg.sender,
@@ -199,10 +214,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             "cannot train new fleet until previous has finished"
         );
         uint256 fleetCost = 0;
-        fleetCost += _sifGattaca * sifGattacaPrice;
-        fleetCost += _mhrudvogThrot * mhrudvogThrotPrice;
-        fleetCost += _drebentraakht * drebentraakhtPrice;
-        require(drakma.transferFrom(msg.sender, address(this), fleetCost));
 
         uint256 timeTrainingDone = 0;
         timeTrainingDone = _sifGattaca * sifGattacaTrainingTime;
@@ -212,6 +223,17 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         if(_drebentraakht * drebentraakhtTrainingTime > timeTrainingDone) {
             timeTrainingDone = _drebentraakht * drebentraakhtTrainingTime;
         }
+        console.log(timeTrainingDone, block.timestamp);
+        require(
+            block.timestamp + timeTrainingDone < periodFinish,
+            "cannot train fleet passed the end of the season"
+        );
+
+        fleetCost += _sifGattaca * sifGattacaPrice;
+        fleetCost += _mhrudvogThrot * mhrudvogThrotPrice;
+        fleetCost += _drebentraakht * drebentraakhtPrice;
+        require(drakma.transferFrom(msg.sender, address(this), fleetCost));
+
         fleet[_citadelId].trainingDone = lastTimeRewardApplicable() + timeTrainingDone;
         fleet[_citadelId].trainingFleet.sifGattaca = _sifGattaca;
         fleet[_citadelId].trainingFleet.mhrudvogThrot = _mhrudvogThrot;
@@ -260,7 +282,20 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         // raids immediate when subgrid open
         uint256 timeRaidHits = lastTimeRewardApplicable();
         uint256 gridDistance = combatEngine.calculateGridDistance(citadel[_fromCitadel].gridId, citadel[_toCitadel].gridId);
-        timeRaidHits += (gridDistance * 3600000);
+        timeRaidHits += (gridDistance * gridTraversalTime);
+        
+        if (gridDistance <= subgridDistortion) {
+            require(
+                timeRaidHits < periodFinish,
+                "cannot raid passed the end of the season"
+            );
+        } else {
+            require(
+                block.timestamp < periodFinish,
+                "cannot raid passed the end of the season"
+            );
+        }
+
 
         raids[_fromCitadel] = Raid(_toCitadel, Fleet(_sifGattaca, _mhrudvogThrot, _drebentraakht, true), _pilot, true, timeRaidHits);
         fleet[_fromCitadel].fleet.sifGattaca -= _sifGattaca;
@@ -351,12 +386,39 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         drakma.safeTransfer(msg.sender, amount);
     }
 
-    // internal views
+    function updateFleetParams(
+        uint256 _sifGattacaPrice, 
+        uint256 _mhrudvogThrotPrice, 
+        uint256 _drebentraakhtPrice, 
+        uint256 _sifGattacaTrainingTime,
+        uint256 _mhrudvogThrotTrainingTime,
+        uint256 _drebentraakhtTrainingTime
+    ) external onlyOwner {
+        sifGattacaPrice = _sifGattacaPrice;
+        mhrudvogThrotPrice = _mhrudvogThrotPrice;
+        drebentraakhtPrice = _drebentraakhtPrice;
+        sifGattacaTrainingTime = _sifGattacaTrainingTime;
+        mhrudvogThrotTrainingTime = _mhrudvogThrotTrainingTime;
+        drebentraakhtTrainingTime = _drebentraakhtTrainingTime;
+    }
+
+    function updateGameParams(
+        uint256 _periodFinish, 
+        uint8 _subgridDistortion, 
+        uint256 _gridTraversalTime, 
+        bool _escapeHatchOn
+    ) external onlyOwner {
+        periodFinish = _periodFinish;
+        subgridDistortion = _subgridDistortion;
+        escapeHatchOn = _escapeHatchOn;
+        gridTraversalTime = _gridTraversalTime;
+    }
+
+    // public views
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
-    // public views
     function getCitadelFleetCount(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
         uint256 sifGattaca = fleet[_citadelId].fleet.sifGattaca;
         uint256 mhrudvogThrot = fleet[_citadelId].fleet.mhrudvogThrot;
