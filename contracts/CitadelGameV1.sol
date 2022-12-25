@@ -158,11 +158,11 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     function escapeHatch(uint256 _citadelId) external nonReentrant {
+        require(escapeHatchOn == true, "escapeHatch is closed");
         require(
             citadel[_citadelId].walletAddress == msg.sender,
             "must own lit citadel to withdraw"
         );
-        require(escapeHatchOn == true, "escapeHatch is off");
 
         for (uint256 i; i < citadel[_citadelId].pilot.length; ++i) {
             pilotCollection.transferFrom(address(this), msg.sender, citadel[_citadelId].pilot[i]);

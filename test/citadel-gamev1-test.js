@@ -567,7 +567,7 @@ describe.only("citadel game v1", function () {
 
       });
 
-      it.only("sends direct neighbor raid from 1023 to 40", async function () {
+      it("sends direct neighbor raid from 1023 to 40", async function () {
         [owner, addr1] = await ethers.getSigners();
 
         await this.citadelGameV1.connect(addr1).sendRaid(1023, 40, [3,4], 10, 0, 0);
@@ -758,6 +758,81 @@ describe.only("citadel game v1", function () {
           this.citadelGameV1.sendRaid(40, 1023, [3,4], 10, 0, 0),
           "pilot sent must be staked to raiding citadel"
         );
+      });
+
+    });
+
+    describe("admin", function () {
+
+      beforeEach(async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 40);
+        await this.citadelGameV1.liteGrid(40, [], 512, 1);
+
+        await this.citadelNFT.transferFrom(owner.address, addr1.address, 1023);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 3);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 4);
+        await this.citadelNFT.connect(addr1).approve(this.citadelGameV1.address, 1023);
+        await this.pilotNFT.connect(addr1).approve(this.citadelGameV1.address, 3);
+        await this.pilotNFT.connect(addr1).approve(this.citadelGameV1.address, 4);
+
+        await this.citadelGameV1.connect(addr1).liteGrid(1023, [3,4], 513, 2);
+
+      });
+
+      it("reverts escape hatch when closed", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await expectRevert(
+          this.citadelGameV1.escapeHatch(40),
+          "escapeHatch is closed"
+        );
+      });
+
+      it("reverts escape hatch of unowned CITADEL", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.updateGameParams(1674943200, 1, 1800, true);
+
+        await expectRevert(
+          this.citadelGameV1.escapeHatch(1023),
+          "must own lit citadel to withdraw"
+        );
+      });
+
+      it("uses escape hatch", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.updateGameParams(1674943200, 1, 1800, true);
+
+        await this.citadelGameV1.escapeHatch(40);
+
+        ownerOfCitadel40 = await this.citadelNFT.ownerOf(40);
+        expect(ownerOfCitadel40).to.equal(owner.address);
+
+      });
+
+      it("updates fleet params", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.updateFleetParams("10000000000000000000", "20000000000000000000", "800000000000000000000", 60, 60, 60);
+        sifGattacaPrice = await this.citadelGameV1.sifGattacaPrice();
+        expect(Number(sifGattacaPrice.toString())).to.equal(10000000000000000000);
+        mhrudvogThrotPrice = await this.citadelGameV1.mhrudvogThrotPrice();
+        expect(Number(mhrudvogThrotPrice.toString())).to.equal(20000000000000000000);
+        drebentraakhtPrice = await this.citadelGameV1.drebentraakhtPrice();
+        expect(Number(drebentraakhtPrice.toString())).to.equal(800000000000000000000);
+
+        sifGattacaTrainingTime = await this.citadelGameV1.sifGattacaTrainingTime();
+        expect(Number(sifGattacaTrainingTime.toString())).to.equal(60);
+        mhrudvogThrotTrainingTime = await this.citadelGameV1.mhrudvogThrotTrainingTime();
+        expect(Number(mhrudvogThrotTrainingTime.toString())).to.equal(60);
+        drebentraakhtTrainingTime = await this.citadelGameV1.drebentraakhtTrainingTime();
+        expect(Number(drebentraakhtTrainingTime.toString())).to.equal(60);
+
       });
 
     });
