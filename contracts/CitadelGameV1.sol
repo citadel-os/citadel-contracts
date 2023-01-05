@@ -69,8 +69,8 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
     //variables
     uint256 periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
-    uint256 maxGrid = 1024;
-    uint8 maxFaction = 5;
+    uint256 maxGrid = 1023;
+    uint8 maxFaction = 4;
     uint256 public sifGattacaPrice = 20000000000000000000;
     uint256 public mhrudvogThrotPrice = 40000000000000000000;
     uint256 public drebentraakhtPrice = 800000000000000000000;
