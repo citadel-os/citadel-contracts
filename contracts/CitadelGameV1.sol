@@ -43,7 +43,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 sifGattaca;
         uint256 mhrudvogThrot;
         uint256 drebentraakht;
-        bool isValue;
     }
 
     struct AllFleet {
@@ -57,7 +56,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 toCitadel;
         Fleet fleet;
         uint256[] pilot;
-        bool isValue;
         uint256 timeRaidHits;
     }
 
@@ -128,7 +126,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].fleetPoints = 0;
         if(!fleet[_citadelId].isValue) {
             fleet[_citadelId].isValue = true;
-            fleet[_citadelId].fleet = Fleet(10,2,0,true);
+            fleet[_citadelId].fleet = Fleet(10,2,0);
         }
         grid[_gridId] = true;
     }
@@ -223,7 +221,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         if(_drebentraakht * drebentraakhtTrainingTime > timeTrainingDone) {
             timeTrainingDone = _drebentraakht * drebentraakhtTrainingTime;
         }
-        console.log(timeTrainingDone, block.timestamp);
         require(
             block.timestamp + timeTrainingDone < periodFinish,
             "cannot train fleet passed the end of the season"
@@ -297,7 +294,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         }
 
 
-        raids[_fromCitadel] = Raid(_toCitadel, Fleet(_sifGattaca, _mhrudvogThrot, _drebentraakht, true), _pilot, true, timeRaidHits);
+        raids[_fromCitadel] = Raid(_toCitadel, Fleet(_sifGattaca, _mhrudvogThrot, _drebentraakht), _pilot, timeRaidHits);
         fleet[_fromCitadel].fleet.sifGattaca -= _sifGattaca;
         fleet[_fromCitadel].fleet.mhrudvogThrot -= _mhrudvogThrot;
         fleet[_fromCitadel].fleet.drebentraakht -= _drebentraakht;
@@ -338,13 +335,13 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 combatDP = combatEngine.combatDP(toCitadel, citadel[toCitadel].pilot, fleet[toCitadel].fleet.sifGattaca, fleet[toCitadel].fleet.mhrudvogThrot, fleet[toCitadel].fleet.drebentraakht);
 
         // calculate fleet damage
-        fleet[toCitadel].fleet.sifGattaca = (fleet[toCitadel].fleet.sifGattaca * combatDP) / (combatOP + combatDP);
-        fleet[toCitadel].fleet.mhrudvogThrot = (fleet[toCitadel].fleet.mhrudvogThrot * combatDP) / (combatOP + combatDP);
-        fleet[toCitadel].fleet.drebentraakht = (fleet[toCitadel].fleet.drebentraakht * combatDP) / (combatOP + combatDP);
+        fleet[toCitadel].fleet.sifGattaca = fleet[toCitadel].fleet.sifGattaca - (fleet[toCitadel].fleet.sifGattaca * combatDP * 25) / ((combatOP + combatDP) * 100);
+        fleet[toCitadel].fleet.mhrudvogThrot = fleet[toCitadel].fleet.mhrudvogThrot - (fleet[toCitadel].fleet.mhrudvogThrot * combatDP * 25) / ((combatOP + combatDP) * 100);
+        fleet[toCitadel].fleet.drebentraakht = fleet[toCitadel].fleet.drebentraakht - (fleet[toCitadel].fleet.drebentraakht * combatDP * 25) / ((combatOP + combatDP) * 100);
 
-        raids[_fromCitadel].fleet.sifGattaca = (raids[_fromCitadel].fleet.sifGattaca * combatOP) / (combatOP + combatDP);
-        raids[_fromCitadel].fleet.mhrudvogThrot = (raids[_fromCitadel].fleet.mhrudvogThrot * combatOP) / (combatOP + combatDP);
-        raids[_fromCitadel].fleet.drebentraakht = (raids[_fromCitadel].fleet.drebentraakht * combatOP) / (combatOP + combatDP);
+        raids[_fromCitadel].fleet.sifGattaca = raids[_fromCitadel].fleet.sifGattaca - (raids[_fromCitadel].fleet.sifGattaca * combatOP * 25) / ((combatOP + combatDP) * 100);
+        raids[_fromCitadel].fleet.mhrudvogThrot = raids[_fromCitadel].fleet.mhrudvogThrot - (raids[_fromCitadel].fleet.mhrudvogThrot * combatOP * 25) / ((combatOP + combatDP) * 100);
+        raids[_fromCitadel].fleet.drebentraakht = raids[_fromCitadel].fleet.drebentraakht - (raids[_fromCitadel].fleet.drebentraakht * combatOP * 25) / ((combatOP + combatDP) * 100);
 
         // transfer dk
         uint256 drakmaAvailable = combatEngine.calculateMiningOutput(toCitadel, citadel[toCitadel].gridId, getMiningStartTime(toCitadel)) + citadel[toCitadel].unclaimedDrakma;

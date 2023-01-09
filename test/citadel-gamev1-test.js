@@ -173,7 +173,7 @@ describe.only("citadel game v1", function () {
       });
     });
 
-    describe("dims from grid", function () {
+    describe("dims grid", function () {
 
       beforeEach(async function () {
         await this.pilotNFT.reservePILOT(256);
@@ -552,7 +552,7 @@ describe.only("citadel game v1", function () {
           mhrudvogThrot40,
           drebentraakht40
         ] = await this.citadelGameV1.getCitadelFleetCount(40);
-        expect(Number(sifGattaca40.toString())).to.be.lessThan(10);
+        expect(Number(sifGattaca40.toString())).to.be.lessThanOrEqual(10);
         expect(Number(mhrudvogThrot40.toString())).to.equal(2);
         expect(Number(drebentraakht40.toString())).to.equal(0);
 
