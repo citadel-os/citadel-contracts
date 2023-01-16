@@ -32,7 +32,13 @@ contract CombatEngineV1 {
         pilotCollection = _pilotCollection;
     }
 
-    function combatOP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) public view returns (uint256) {
+    function combatOP(
+        uint256 _citadelId, 
+        uint256[] memory _pilotIds, 
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) public view returns (uint256) {
         uint256 multiple = 0;
 
         for (uint256 i; i < _pilotIds.length; ++i) {
@@ -49,7 +55,13 @@ contract CombatEngineV1 {
         );
     }
 
-    function combatDP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) public view returns (uint256) {
+    function combatDP(
+        uint256 _citadelId, 
+        uint256[] memory _pilotIds, 
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) public view returns (uint256) {
         uint256 swarmMultiple = 0;
         uint256 siegeMultiple = 0;
         uint256 multiple = 0;
@@ -61,7 +73,12 @@ contract CombatEngineV1 {
         multiple += calculateBaseCitadelMultiple(weaponsProp[_citadelId]);
         multiple += calculateBaseCitadelMultiple(shieldProp[_citadelId]);
 
-        (swarmMultiple, siegeMultiple) = calculateUniqueBonus(weaponsProp[_citadelId], engineProp[_citadelId], shieldProp[_citadelId]);
+        (swarmMultiple, siegeMultiple) = calculateUniqueBonus(
+            weaponsProp[_citadelId], 
+            engineProp[_citadelId], 
+            shieldProp[_citadelId]
+        );
+
         uint256 dp = ((
             (
                 ((_sifGattaca * sifGattacaDP) * (100 + swarmMultiple) / 100) +
@@ -73,7 +90,11 @@ contract CombatEngineV1 {
         return dp;
     }
 
-    function calculateMiningOutput(uint256 _citadelId, uint256 _gridId, uint256 lastClaimTime) public view returns (uint256) {
+    function calculateMiningOutput(
+        uint256 _citadelId, 
+        uint256 _gridId, 
+        uint256 lastClaimTime
+    ) public view returns (uint256) {
         uint256 miningMultiple = calculateMiningMultiple(engineProp[_citadelId], shieldProp[_citadelId]);
         return (
             ((lastTimeRewardApplicable() - lastClaimTime) *

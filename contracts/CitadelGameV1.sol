@@ -9,8 +9,20 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 interface ICOMBATENGINE {
-    function combatOP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external view returns (uint256);
-    function combatDP(uint256 _citadelId, uint256[] memory _pilotIds, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external view returns (uint256);
+    function combatOP(
+        uint256 _citadelId, 
+        uint256[] memory _pilotIds, 
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) external view returns (uint256);
+    function combatDP(
+        uint256 _citadelId, 
+        uint256[] memory _pilotIds, 
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) external view returns (uint256);
     function calculateMiningOutput(uint256 _citadelId, uint256 _gridId, uint256 claimTime) external view returns (uint256);
     function calculateGridDistance(uint256 _fromGridId, uint256 _toGridId) external view returns (uint256);
 }
@@ -180,8 +192,11 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         require(citadel[_citadelId].isLit == true, "cannot claim unlit citadel");
         require(citadel[_citadelId].isOnline == true, "cannot claim offline citadel");
         require((citadel[_citadelId].timeOfLastClaim + claimInterval) < lastTimeRewardApplicable(), "one claim per interval permitted");
-        uint256 drakmaToClaim = combatEngine.calculateMiningOutput(_citadelId, citadel[_citadelId].gridId, getMiningStartTime(_citadelId))
-            + citadel[_citadelId].unclaimedDrakma;
+        uint256 drakmaToClaim = combatEngine.calculateMiningOutput(
+            _citadelId, 
+            citadel[_citadelId].gridId, 
+            getMiningStartTime(_citadelId)
+        ) + citadel[_citadelId].unclaimedDrakma;
 
         if(drakmaToClaim > 0) {
             drakma.safeTransfer(msg.sender, drakmaToClaim);
@@ -237,7 +252,14 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
     }
 
-    function sendRaid(uint256 _fromCitadel, uint256 _toCitadel, uint256[] calldata _pilot, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
+    function sendRaid(
+        uint256 _fromCitadel, 
+        uint256 _toCitadel, 
+        uint256[] calldata _pilot, 
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) external nonReentrant {
         require(_fromCitadel != _toCitadel, "cannot raid own citadel");
         require(
             citadel[_fromCitadel].walletAddress == msg.sender,
@@ -331,26 +353,61 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             return;
         }
 
-        uint256 combatOP = combatEngine.combatOP(_fromCitadel, raids[_fromCitadel].pilot, raids[_fromCitadel].fleet.sifGattaca, raids[_fromCitadel].fleet.mhrudvogThrot, raids[_fromCitadel].fleet.drebentraakht);
-        uint256 combatDP = combatEngine.combatDP(toCitadel, citadel[toCitadel].pilot, fleet[toCitadel].fleet.sifGattaca, fleet[toCitadel].fleet.mhrudvogThrot, fleet[toCitadel].fleet.drebentraakht);
+        uint256 combatOP = combatEngine.combatOP(
+            _fromCitadel, 
+            raids[_fromCitadel].pilot, 
+            raids[_fromCitadel].fleet.sifGattaca, 
+            raids[_fromCitadel].fleet.mhrudvogThrot, 
+            raids[_fromCitadel].fleet.drebentraakht
+        );
+        uint256 combatDP = combatEngine.combatDP(
+            toCitadel, 
+            citadel[toCitadel].pilot, 
+            fleet[toCitadel].fleet.sifGattaca, 
+            fleet[toCitadel].fleet.mhrudvogThrot, 
+            fleet[toCitadel].fleet.drebentraakht
+        );
 
         // calculate fleet damage
-        fleet[toCitadel].fleet.sifGattaca = fleet[toCitadel].fleet.sifGattaca - (fleet[toCitadel].fleet.sifGattaca * combatDP * 25) / ((combatOP + combatDP) * 100);
-        fleet[toCitadel].fleet.mhrudvogThrot = fleet[toCitadel].fleet.mhrudvogThrot - (fleet[toCitadel].fleet.mhrudvogThrot * combatDP * 25) / ((combatOP + combatDP) * 100);
-        fleet[toCitadel].fleet.drebentraakht = fleet[toCitadel].fleet.drebentraakht - (fleet[toCitadel].fleet.drebentraakht * combatDP * 25) / ((combatOP + combatDP) * 100);
+        fleet[toCitadel].fleet.sifGattaca = fleet[toCitadel].fleet.sifGattaca - (
+            fleet[toCitadel].fleet.sifGattaca * combatDP * 25
+        ) / ((combatOP + combatDP) * 100);
 
-        raids[_fromCitadel].fleet.sifGattaca = raids[_fromCitadel].fleet.sifGattaca - (raids[_fromCitadel].fleet.sifGattaca * combatOP * 25) / ((combatOP + combatDP) * 100);
-        raids[_fromCitadel].fleet.mhrudvogThrot = raids[_fromCitadel].fleet.mhrudvogThrot - (raids[_fromCitadel].fleet.mhrudvogThrot * combatOP * 25) / ((combatOP + combatDP) * 100);
-        raids[_fromCitadel].fleet.drebentraakht = raids[_fromCitadel].fleet.drebentraakht - (raids[_fromCitadel].fleet.drebentraakht * combatOP * 25) / ((combatOP + combatDP) * 100);
+        fleet[toCitadel].fleet.mhrudvogThrot = fleet[toCitadel].fleet.mhrudvogThrot - (
+            fleet[toCitadel].fleet.mhrudvogThrot * combatDP * 25
+        ) / ((combatOP + combatDP) * 100);
+        
+        fleet[toCitadel].fleet.drebentraakht = fleet[toCitadel].fleet.drebentraakht - (
+            fleet[toCitadel].fleet.drebentraakht * combatDP * 25
+        ) / ((combatOP + combatDP) * 100);
+
+        raids[_fromCitadel].fleet.sifGattaca = raids[_fromCitadel].fleet.sifGattaca - (
+            raids[_fromCitadel].fleet.sifGattaca * combatOP * 25
+        ) / ((combatOP + combatDP) * 100);
+
+        raids[_fromCitadel].fleet.mhrudvogThrot = raids[_fromCitadel].fleet.mhrudvogThrot - (
+            raids[_fromCitadel].fleet.mhrudvogThrot * combatOP * 25
+        ) / ((combatOP + combatDP) * 100);
+
+        raids[_fromCitadel].fleet.drebentraakht = raids[_fromCitadel].fleet.drebentraakht - (
+            raids[_fromCitadel].fleet.drebentraakht * combatOP * 25
+        ) / ((combatOP + combatDP) * 100);
 
         // transfer dk
-        uint256 drakmaAvailable = combatEngine.calculateMiningOutput(toCitadel, citadel[toCitadel].gridId, getMiningStartTime(toCitadel)) + citadel[toCitadel].unclaimedDrakma;
+        uint256 drakmaAvailable = combatEngine.calculateMiningOutput(
+            toCitadel, 
+            citadel[toCitadel].gridId, 
+            getMiningStartTime(toCitadel)
+        ) + citadel[toCitadel].unclaimedDrakma;
+
         uint256 drakmaCarry = (
             (raids[_fromCitadel].fleet.sifGattaca * sifGattacaCary) +
             (raids[_fromCitadel].fleet.mhrudvogThrot * mhrudvogThrotCary) +
             (raids[_fromCitadel].fleet.drebentraakht * drebentraakhtCary)
         );
+
         uint256 dkToTransfer = drakmaAvailable > drakmaCarry ? drakmaCarry : drakmaAvailable;
+        
         citadel[toCitadel].unclaimedDrakma += (drakmaAvailable - dkToTransfer);
         citadel[_fromCitadel].unclaimedDrakma += (dkToTransfer * 9) / 10;
         drakma.safeTransfer(msg.sender, (dkToTransfer / 10));
