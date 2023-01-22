@@ -1,6 +1,6 @@
 const {fs} = require('file-system');
 
-const MULTIPLE = 90000;
+const MULTIPLE = 56500;
 const CITADEL_MAX = 1024;
 const ETH_MULTIPLIER = 1000000000000000000;
 let CITADEL = [];
@@ -67,7 +67,7 @@ function populateCitadel() {
         let rawdata = fs.readFileSync(fileName);
         let citadel = JSON.parse(rawdata);
         CITADEL[i] = citadel;
-        if (citadel.techIndex >= 16 && citadel.techIndex < 24 && citadel.amountStaked > 0) {
+        if (citadel.techIndex >= 24 && citadel.techIndex < 33 && citadel.amountStaked > 0) {
             if (citadelMap.get(citadel.walletAddress)) {
                 increment = citadelMap.get(citadel.walletAddress) + 1;
                 citadelMap.set(citadel.walletAddress, increment);

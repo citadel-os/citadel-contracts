@@ -8,7 +8,17 @@ node scripts/props/citadelProps.js
 node scripts/interact/whitelistMerkle.js
 
 npx hardhat run scripts/interact/interactCitadelNFT.js --network mainnet
-npx hardhat run scripts/game/raid.js --network goerli
+npx hardhat run scripts/game/raid.js --network goerl
+
+npx hardhat run scripts/interact/interactSovereign.js --network mainnet
+
+npx hardhat run scripts/game/train.js --network goerli
+```
+
+## sovereign
+```
+
+npx hardhat run scripts/interact/interactSovereign.js --network mainnet
 ```
 
 ## deploy

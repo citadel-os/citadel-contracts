@@ -8,9 +8,9 @@ async function main() {
     const PilotNFT = await ethers.getContractFactory("PilotNFT");
     const pilotNFT = await PilotNFT.attach(PILOT_NFT);
 
-    await pilotNFT.updateBaseURI(
-      "https://gateway.pinata.cloud/ipfs/QmPQP6TwL5A3yrdtw5cYP4DcbbuuhdfRZrRmzYvgQSemPi/"
-    );
+    // await pilotNFT.updateBaseURI(
+    //   "https://gateway.pinata.cloud/ipfs/QmPQP6TwL5A3yrdtw5cYP4DcbbuuhdfRZrRmzYvgQSemPi/"
+    // );
 
     // tx = await pilotNFT.reservePILOT(256);
     // console.log(tx);
@@ -25,8 +25,8 @@ async function main() {
     // tx = await pilotNFT.withdrawEth();
     // console.log(tx);
 
-    // tx = await pilotNFT.withdrawDrakma("108672000000000000000000000");
-    // console.log(tx);
+    tx = await pilotNFT.withdrawDrakma("22732000000000000000000000");
+    console.log(tx);
 
     // sovereignCounter = await pilotNFT.sovereignCounter();
     // console.log(sovereignCounter);

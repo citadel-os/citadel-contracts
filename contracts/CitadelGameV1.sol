@@ -509,6 +509,10 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         );
     }
 
+    function getCitadelPilot(uint256 _citadelId) public view returns( uint256[] memory){
+        return citadel[_citadelId].pilot;
+    }
+
     function getCitadelMining(uint256 _citadelId) public view returns (uint256, uint256, uint256, uint256, bool) {
         return (
                 citadel[_citadelId].timeLit,
