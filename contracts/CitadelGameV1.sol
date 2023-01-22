@@ -36,6 +36,15 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     IERC721 public immutable pilotCollection;
     ICOMBATENGINE public immutable combatEngine;
 
+    // events
+    event DispatchRaid(
+        uint256 fromCitadelId, 
+        uint256 toCitadelId,
+        uint256 timeRaidHit,
+        uint256 offensiveCarryCapacity,
+        uint256 drakmaRaided
+    );
+
     // data structures
     struct CitadelStaked {
         address walletAddress;
@@ -368,28 +377,41 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             fleet[toCitadel].fleet.drebentraakht
         );
 
-        // calculate fleet damage
-        fleet[toCitadel].fleet.sifGattaca = fleet[toCitadel].fleet.sifGattaca - (
-            fleet[toCitadel].fleet.sifGattaca * combatDP * 25
+        // calculate fleet damage offense
+
+        uint256 drebentraakhtOffenseDestroyed = (
+            raids[_fromCitadel].fleet.drebentraakht * combatOP * 25
         ) / ((combatOP + combatDP) * 100);
 
-        fleet[toCitadel].fleet.mhrudvogThrot = fleet[toCitadel].fleet.mhrudvogThrot - (
+        // update fleet count of defender
+        fleet[toCitadel].fleet.sifGattaca = 
+            fleet[toCitadel].fleet.sifGattaca - (
+            fleet[toCitadel].fleet.sifGattaca * combatDP * 25
+        ) / ((combatOP + combatDP) * 100);
+        
+        fleet[toCitadel].fleet.mhrudvogThrot = 
+            fleet[toCitadel].fleet.mhrudvogThrot - (
             fleet[toCitadel].fleet.mhrudvogThrot * combatDP * 25
         ) / ((combatOP + combatDP) * 100);
         
-        fleet[toCitadel].fleet.drebentraakht = fleet[toCitadel].fleet.drebentraakht - (
+        fleet[toCitadel].fleet.drebentraakht = 
+            fleet[toCitadel].fleet.drebentraakht - (
             fleet[toCitadel].fleet.drebentraakht * combatDP * 25
         ) / ((combatOP + combatDP) * 100);
 
-        raids[_fromCitadel].fleet.sifGattaca = raids[_fromCitadel].fleet.sifGattaca - (
+        // update fleet count of raider
+        raids[_fromCitadel].fleet.sifGattaca = 
+            raids[_fromCitadel].fleet.sifGattaca - (
             raids[_fromCitadel].fleet.sifGattaca * combatOP * 25
         ) / ((combatOP + combatDP) * 100);
 
-        raids[_fromCitadel].fleet.mhrudvogThrot = raids[_fromCitadel].fleet.mhrudvogThrot - (
-            raids[_fromCitadel].fleet.mhrudvogThrot * combatOP * 25
+        raids[_fromCitadel].fleet.mhrudvogThrot = 
+            raids[_fromCitadel].fleet.mhrudvogThrot - (
+                raids[_fromCitadel].fleet.mhrudvogThrot * combatOP * 25
         ) / ((combatOP + combatDP) * 100);
 
-        raids[_fromCitadel].fleet.drebentraakht = raids[_fromCitadel].fleet.drebentraakht - (
+        raids[_fromCitadel].fleet.drebentraakht = 
+            raids[_fromCitadel].fleet.drebentraakht - (
             raids[_fromCitadel].fleet.drebentraakht * combatOP * 25
         ) / ((combatOP + combatDP) * 100);
 
@@ -419,8 +441,16 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleet[_fromCitadel].fleet.sifGattaca += raids[_fromCitadel].fleet.sifGattaca;
         fleet[_fromCitadel].fleet.mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
         fleet[_fromCitadel].fleet.drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
-        delete raids[_fromCitadel];
 
+        emit DispatchRaid(
+            _fromCitadel,
+            toCitadel,
+            raids[_fromCitadel].timeRaidHits,
+            drakmaCarry,
+            dkToTransfer
+        );
+
+        delete raids[_fromCitadel];
     }
 
     function resolveTraining(uint256 _citadelId) internal {
