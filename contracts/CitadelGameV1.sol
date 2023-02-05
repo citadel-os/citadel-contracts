@@ -358,6 +358,8 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             fleet[toCitadel].fleet.sifGattaca += raids[_fromCitadel].fleet.sifGattaca;
             fleet[toCitadel].fleet.mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
             fleet[toCitadel].fleet.drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
+            citadel[toCitadel].isOnline = true;
+            citadel[_fromCitadel].isOnline = true;
             delete raids[_fromCitadel];
             return;
         }
@@ -376,12 +378,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             fleet[toCitadel].fleet.mhrudvogThrot, 
             fleet[toCitadel].fleet.drebentraakht
         );
-
-        // calculate fleet damage offense
-
-        uint256 drebentraakhtOffenseDestroyed = (
-            raids[_fromCitadel].fleet.drebentraakht * combatOP * 25
-        ) / ((combatOP + combatDP) * 100);
 
         // update fleet count of defender
         fleet[toCitadel].fleet.sifGattaca = 

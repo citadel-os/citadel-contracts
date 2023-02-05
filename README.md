@@ -23,7 +23,7 @@ npx hardhat run scripts/interact/interactSovereign.js --network mainnet
 
 ## deploy
 ```
-npx hardhat run scripts/deploy/deployCitadel.js --network localhost
+npx hardhat run scripts/deploy/deployCitadel.js --network goerli
 ```
 
 ## test
