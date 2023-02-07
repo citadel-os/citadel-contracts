@@ -3,12 +3,13 @@ pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IPILOT {
     function getOnchainPILOT(uint256 tokenId) external view returns (bool, uint8);
 }
 
-contract CombatEngineV1 {
+contract CombatEngineV1 is Ownable {
     IPILOT public immutable pilotCollection;
 
     // citadel props
@@ -209,6 +210,14 @@ contract CombatEngineV1 {
 
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < periodFinish ? block.timestamp : periodFinish;
+    }
+
+    function updateGameParams(
+        uint256 _periodFinish, 
+        uint256 _baseMiningRatePerHour
+    ) external onlyOwner {
+        periodFinish = _periodFinish;
+        baseMiningRatePerHour = _baseMiningRatePerHour;
     }
 
 }
