@@ -25,6 +25,11 @@ interface ICOMBATENGINE {
     ) external view returns (uint256);
     function calculateMiningOutput(uint256 _citadelId, uint256 _gridId, uint256 claimTime) external view returns (uint256);
     function calculateGridDistance(uint256 _fromGridId, uint256 _toGridId) external view returns (uint256);
+    function calculateTrainingCost(        
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) external view returns (uint256, uint256);
 }
 
 contract CitadelGameV1 is Ownable, ReentrancyGuard {
@@ -89,12 +94,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     uint256 periodFinish = 1735700987; //JAN 1 2025, 2PM PT 
     uint256 maxGrid = 1023;
     uint8 maxFaction = 4;
-    uint256 sifGattacaPrice = 20000000000000000000;
-    uint256 mhrudvogThrotPrice = 40000000000000000000;
-    uint256 drebentraakhtPrice = 800000000000000000000;
-    uint256 sifGattacaTrainingTime = 5 minutes;
-    uint256 mhrudvogThrotTrainingTime = 15 minutes;
-    uint256 drebentraakhtTrainingTime = 1 hours;
     uint256 sifGattacaCary = 10000000000000000000;
     uint256 mhrudvogThrotCary = 2000000000000000000;
     uint256 drebentraakhtCary = 400000000000000000000;
@@ -235,25 +234,17 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         );
         uint256 fleetCost = 0;
 
-        uint256 timeTrainingDone = 0;
-        timeTrainingDone = _sifGattaca * sifGattacaTrainingTime;
-        if(_mhrudvogThrot * mhrudvogThrotTrainingTime > timeTrainingDone) {
-            timeTrainingDone = _mhrudvogThrot * mhrudvogThrotTrainingTime;
-        }
-        if(_drebentraakht * drebentraakhtTrainingTime > timeTrainingDone) {
-            timeTrainingDone = _drebentraakht * drebentraakhtTrainingTime;
-        }
+
+        (uint256 trainingCost, uint256 timeTrainingDone) = combatEngine.calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
+
         require(
             block.timestamp + timeTrainingDone < periodFinish,
             "cannot train fleet passed the end of the season"
         );
 
-        fleetCost += _sifGattaca * sifGattacaPrice;
-        fleetCost += _mhrudvogThrot * mhrudvogThrotPrice;
-        fleetCost += _drebentraakht * drebentraakhtPrice;
-        require(drakma.transferFrom(msg.sender, address(this), fleetCost));
+        require(drakma.transferFrom(msg.sender, address(this), trainingCost));
 
-        fleet[_citadelId].trainingDone = lastTimeRewardApplicable() + timeTrainingDone;
+        fleet[_citadelId].trainingDone = timeTrainingDone;
         fleet[_citadelId].trainingFleet.sifGattaca = _sifGattaca;
         fleet[_citadelId].trainingFleet.mhrudvogThrot = _mhrudvogThrot;
         fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
@@ -462,22 +453,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     // only owner
     function withdrawDrakma(uint256 amount) external onlyOwner {
         drakma.safeTransfer(msg.sender, amount);
-    }
-
-    function updateFleetParams(
-        uint256 _sifGattacaPrice, 
-        uint256 _mhrudvogThrotPrice, 
-        uint256 _drebentraakhtPrice, 
-        uint256 _sifGattacaTrainingTime,
-        uint256 _mhrudvogThrotTrainingTime,
-        uint256 _drebentraakhtTrainingTime
-    ) external onlyOwner {
-        sifGattacaPrice = _sifGattacaPrice;
-        mhrudvogThrotPrice = _mhrudvogThrotPrice;
-        drebentraakhtPrice = _drebentraakhtPrice;
-        sifGattacaTrainingTime = _sifGattacaTrainingTime;
-        mhrudvogThrotTrainingTime = _mhrudvogThrotTrainingTime;
-        drebentraakhtTrainingTime = _drebentraakhtTrainingTime;
     }
 
     function updateGameParams(

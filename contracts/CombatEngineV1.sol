@@ -214,6 +214,15 @@ contract CombatEngineV1 is Ownable {
         return Math.sqrt(uint256((int(_a % 32) - int(_b % 32))**2 + (int(_a / 32) - int(_b / 32))**2));
     }
 
+    function calculateTrainingCost(
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) public view returns (uint256, uint256) {
+        //return cost, timeTrainingDone (use lastrewardtimeapplicable)
+        return (0, 0);
+    }
+
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
