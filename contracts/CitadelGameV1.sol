@@ -57,7 +57,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256[] pilot;
         bool isLit;
         bool isOnline;
-        uint256 fleetPoints;
     }
 
     struct Fleet {
@@ -81,24 +80,24 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     // mappings
-    mapping(uint256 => CitadelStaked) public citadel; // index is _citadelId
-    mapping(uint256 => AllFleet) public fleet; // index is _citadelId
-    mapping(uint256 => Raid) public raids; // index is _fromCitadelId
-    mapping(uint256 => bool) public grid; // index is _gridId
+    mapping(uint256 => CitadelStaked) citadel; // index is _citadelId
+    mapping(uint256 => AllFleet) fleet; // index is _citadelId
+    mapping(uint256 => Raid) raids; // index is _fromCitadelId
+    mapping(uint256 => bool) grid; // index is _gridId
 
     //variables
-    uint256 periodFinish = 1674943200; //JAN 28 2023, 2PM PT 
+    uint256 periodFinish = 1735700987; //JAN 1 2025, 2PM PT 
     uint256 maxGrid = 1023;
     uint8 maxFaction = 4;
-    uint256 public sifGattacaPrice = 20000000000000000000;
-    uint256 public mhrudvogThrotPrice = 40000000000000000000;
-    uint256 public drebentraakhtPrice = 800000000000000000000;
-    uint256 public sifGattacaTrainingTime = 5 minutes;
-    uint256 public mhrudvogThrotTrainingTime = 15 minutes;
-    uint256 public drebentraakhtTrainingTime = 1 hours;
-    uint256 public sifGattacaCary = 10000000000000000000;
-    uint256 public mhrudvogThrotCary = 2000000000000000000;
-    uint256 public drebentraakhtCary = 400000000000000000000;
+    uint256 sifGattacaPrice = 20000000000000000000;
+    uint256 mhrudvogThrotPrice = 40000000000000000000;
+    uint256 drebentraakhtPrice = 800000000000000000000;
+    uint256 sifGattacaTrainingTime = 5 minutes;
+    uint256 mhrudvogThrotTrainingTime = 15 minutes;
+    uint256 drebentraakhtTrainingTime = 1 hours;
+    uint256 sifGattacaCary = 10000000000000000000;
+    uint256 mhrudvogThrotCary = 2000000000000000000;
+    uint256 drebentraakhtCary = 400000000000000000000;
     uint8 subgridDistortion = 1;
     uint256 gridTraversalTime = 30 minutes;
     uint256 minFleet = 10;
@@ -144,7 +143,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].timeLastRaided = blockTimeNow;
         citadel[_citadelId].isLit = true;
         citadel[_citadelId].isOnline = true;
-        citadel[_citadelId].fleetPoints = 0;
         if(!fleet[_citadelId].isValue) {
             fleet[_citadelId].isValue = true;
             fleet[_citadelId].fleet = Fleet(10,2,0);
@@ -224,7 +222,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
         require(
             citadel[_citadelId].walletAddress == msg.sender,
-            "must own lit citadel to raid"
+            "must own citadel to train"
         );
         require(
             citadel[_citadelId].isLit == true && citadel[_citadelId].isOnline == true,
@@ -449,7 +447,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         delete raids[_fromCitadel];
     }
 
-    function resolveTraining(uint256 _citadelId) internal {
+    function resolveTraining(uint256 _citadelId) public {
         if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
             fleet[_citadelId].trainingDone = 0;
             fleet[_citadelId].fleet.sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
@@ -524,14 +522,13 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         return (sifGattaca, mhrudvogThrot, drebentraakht);
     }
 
-    function getCitadel(uint256 _citadelId) public view returns (address, uint256, uint8, uint256, bool, uint256) {
+    function getCitadel(uint256 _citadelId) public view returns (address, uint256, uint8, uint256, bool) {
         return (
                 citadel[_citadelId].walletAddress,
                 citadel[_citadelId].gridId,
                 citadel[_citadelId].factionId,
                 citadel[_citadelId].pilot.length,
-                citadel[_citadelId].isLit,
-                citadel[_citadelId].fleetPoints
+                citadel[_citadelId].isLit
         );
     }
 

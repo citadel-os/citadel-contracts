@@ -10,27 +10,29 @@
   "license": "ISC",
   "dependencies": {
     "@alch/alchemy-web3": "^1.1.9",
-    "@openzeppelin/contracts": "^4.8.0",
+    "@openzeppelin/contracts": "^4.8.1",
     "@openzeppelin/contracts-upgradeable": "^4.4.1",
     "dotenv": "^10.0.0",
     "truffle-flattener": "^1.6.0",
     "xterm": "^4.16.0"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.3",
-    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@nomiclabs/hardhat-ethers": "^2.2.2",
+    "@nomiclabs/hardhat-etherscan": "^3.1.6",
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
-    "@openzeppelin/hardhat-upgrades": "^1.12.0",
-    "@openzeppelin/test-helpers": "^0.5.15",
+    "@openzeppelin/hardhat-upgrades": "^1.22.1",
+    "@openzeppelin/test-helpers": "^0.5.16",
     "@openzeppelin/upgrades": "^2.8.0",
-    "chai": "^4.3.6",
+    "chai": "^4.3.7",
     "erc721a": "^3.3.0",
-    "ethereum-waffle": "^3.4.0",
+    "ethereum-waffle": "^4.0.9",
     "ethers": "^5.5.4",
     "file-system": "^2.2.2",
-    "hardhat": "^2.8.0",
+    "hardhat": "^2.12.7",
+    "hardhat-contract-sizer": "^2.8.0",
     "hardhat-gas-reporter": "^1.0.6",
     "keccak256": "1.0.6",
-    "merkletreejs": "0.2.31"
+    "merkletreejs": "0.2.31",
+    "mocha": "10.2.0"
   }
 }

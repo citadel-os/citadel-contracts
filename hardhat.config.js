@@ -5,11 +5,13 @@ require("dotenv").config();
 require("@nomiclabs/hardhat-ethers");
 require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
+require('hardhat-contract-sizer');
 
 const { API_URL, PRIVATE_KEY, ACCOUNT1_PK } = process.env;
 module.exports = {
   solidity: "0.8.4",
   defaultNetwork: "localhost",
+  allowUnlimitedContractSize: true,
   networks: {
     hardhat: {
       chainId: 1337,
@@ -47,8 +49,8 @@ module.exports = {
       accounts: [`0x${PRIVATE_KEY}`],
       gas: "auto",
       gasMultiplier: 1.5,
-      // gas: "auto",
-      // gasMultiplier: 2,
+      gasLimit: 1746472,
+      gasPrice: 12
     },
   },
   etherscan: {

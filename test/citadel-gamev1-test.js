@@ -1,6 +1,9 @@
 var chai = require("chai");
 const expect = chai.expect;
 const { BN, expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
+require('@openzeppelin/test-helpers/configure')({
+  provider: 'http://127.0.0.1:8545',
+});
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
 
