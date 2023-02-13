@@ -25,7 +25,10 @@ interface ICOMBATENGINE {
     ) external view returns (uint256);
     function calculateMiningOutput(uint256 _citadelId, uint256 _gridId, uint256 claimTime) external view returns (uint256);
     function calculateGridDistance(uint256 _fromGridId, uint256 _toGridId) external view returns (uint256);
-    function calculateTrainingCost(        
+}
+
+interface IFLEETENGINE {
+        function calculateTrainingCost(        
         uint256 _sifGattaca, 
         uint256 _mhrudvogThrot, 
         uint256 _drebentraakht
@@ -40,6 +43,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     IERC721 public immutable citadelCollection;
     IERC721 public immutable pilotCollection;
     ICOMBATENGINE public immutable combatEngine;
+    IFLEETENGINE public immutable fleetEngine;
 
     // events
     event DispatchRaid(
@@ -105,11 +109,18 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     bool escapeHatchOn = false;
     
 
-    constructor(IERC721 _citadelCollection, IERC721 _pilotCollection, IERC20 _drakma, ICOMBATENGINE _combatEngine) {
+    constructor(
+        IERC721 _citadelCollection, 
+        IERC721 _pilotCollection, 
+        IERC20 _drakma, 
+        ICOMBATENGINE _combatEngine,
+        IFLEETENGINE _fleetEngine
+    ) {
         citadelCollection = _citadelCollection;
         pilotCollection = _pilotCollection;
         drakma = _drakma;
         combatEngine = _combatEngine;
+        fleetEngine = _fleetEngine;
     }
 
     // external functions
@@ -232,11 +243,8 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             fleet[_citadelId].trainingDone == 0,
             "cannot train new fleet until previous has finished"
         );
-        uint256 fleetCost = 0;
 
-
-        (uint256 trainingCost, uint256 timeTrainingDone) = combatEngine.calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
-
+        (uint256 trainingCost, uint256 timeTrainingDone) = fleetEngine.calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
         require(
             block.timestamp + timeTrainingDone < periodFinish,
             "cannot train fleet passed the end of the season"

@@ -26,13 +26,6 @@ contract CombatEngineV1 is Ownable {
     uint256 mhrudvogThrotDP = 40;
     uint256 drebentraakhtDP = 250;
 
-    uint256 sifGattacaPrice = 20000000000000000000;
-    uint256 mhrudvogThrotPrice = 40000000000000000000;
-    uint256 drebentraakhtPrice = 800000000000000000000;
-    uint256 sifGattacaTrainingTime = 5 minutes;
-    uint256 mhrudvogThrotTrainingTime = 15 minutes;
-    uint256 drebentraakhtTrainingTime = 1 hours;
-
     uint256 periodFinish = 1735700987; //JAN 1 2025, 2PM PT
     
     constructor(IPILOT _pilotCollection) {
@@ -214,15 +207,6 @@ contract CombatEngineV1 is Ownable {
         return Math.sqrt(uint256((int(_a % 32) - int(_b % 32))**2 + (int(_a / 32) - int(_b / 32))**2));
     }
 
-    function calculateTrainingCost(
-        uint256 _sifGattaca, 
-        uint256 _mhrudvogThrot, 
-        uint256 _drebentraakht
-    ) public view returns (uint256, uint256) {
-        //return cost, timeTrainingDone (use lastrewardtimeapplicable)
-        return (0, 0);
-    }
-
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
@@ -234,22 +218,4 @@ contract CombatEngineV1 is Ownable {
         periodFinish = _periodFinish;
         baseMiningRatePerHour = _baseMiningRatePerHour;
     }
-
-        // only owner
-    function updateFleetParams(
-        uint256 _sifGattacaPrice, 
-        uint256 _mhrudvogThrotPrice, 
-        uint256 _drebentraakhtPrice, 
-        uint256 _sifGattacaTrainingTime,
-        uint256 _mhrudvogThrotTrainingTime,
-        uint256 _drebentraakhtTrainingTime
-    ) external onlyOwner {
-        sifGattacaPrice = _sifGattacaPrice;
-        mhrudvogThrotPrice = _mhrudvogThrotPrice;
-        drebentraakhtPrice = _drebentraakhtPrice;
-        sifGattacaTrainingTime = _sifGattacaTrainingTime;
-        mhrudvogThrotTrainingTime = _mhrudvogThrotTrainingTime;
-        drebentraakhtTrainingTime = _drebentraakhtTrainingTime;
-    }
-
 }
