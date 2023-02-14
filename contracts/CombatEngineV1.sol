@@ -33,7 +33,6 @@ contract CombatEngineV1 is Ownable {
     }
 
     function combatOP(
-        uint256 _citadelId, 
         uint256[] memory _pilotIds, 
         uint256 _sifGattaca, 
         uint256 _mhrudvogThrot, 
@@ -88,6 +87,73 @@ contract CombatEngineV1 is Ownable {
             * (100 + multiple)) / 100
         );
         return dp;
+    }
+
+
+    /*
+        fleetTracker used to reduce local variables
+        [0] uint256 _offensiveSifGattaca, 
+        [1] uint256 _offensiveMhrudvogThrot, 
+        [2] uint256 _offensiveDrebentraakht,
+        [3] uint256 _defensiveCitadelId,
+        [4] uint256 _defensiveSifGattaca, 
+        [5] uint256 _defensiveMhrudvogThrot, 
+        [6] uint256 _defensiveDrebentraakht
+    */
+    function calculateDestroyedFleet(            
+        uint256[] memory _offensivePilotIds,
+        uint256[] memory _defensivePilotIds,
+        uint256[7] memory _fleetTracker 
+    ) public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
+        uint256 op = combatOP(
+            _offensivePilotIds, 
+            _fleetTracker[0], 
+            _fleetTracker[1], 
+            _fleetTracker[2]
+        );
+
+        uint256 dp = combatDP(
+            _fleetTracker[3], 
+            _defensivePilotIds, 
+            _fleetTracker[4], 
+            _fleetTracker[5], 
+            _fleetTracker[6]
+        );
+
+        // offensive fleet destroyed & reuse var
+       _fleetTracker[0] = (
+            _fleetTracker[0] * op * 25
+        ) / ((op + dp) * 100);
+
+        _fleetTracker[1] = (
+            _fleetTracker[1] * op * 25
+        ) / ((op + dp) * 100);
+
+        _fleetTracker[2] = (
+            _fleetTracker[2] * op * 25
+        ) / ((op + dp) * 100);
+
+        // defensive fleet destroyed & reuse var
+        _fleetTracker[4] *= (
+            _fleetTracker[4] * dp * 25
+        ) / ((op + dp) * 100);
+        
+        _fleetTracker[5] = (
+            _fleetTracker[5] * dp * 25
+        ) / ((op + dp) * 100);
+        
+        _fleetTracker[6] = (
+            _fleetTracker[6] * dp * 25
+        ) / ((op + dp) * 100);
+
+        return (
+            _fleetTracker[0],
+            _fleetTracker[1],
+            _fleetTracker[2],
+            _fleetTracker[4],
+            _fleetTracker[5],
+            _fleetTracker[6]
+        );
     }
 
     function calculateMiningOutput(

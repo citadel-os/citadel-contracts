@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 interface ICOMBATENGINE {
     function combatOP(
@@ -23,16 +22,33 @@ interface ICOMBATENGINE {
         uint256 _mhrudvogThrot, 
         uint256 _drebentraakht
     ) external view returns (uint256);
-    function calculateMiningOutput(uint256 _citadelId, uint256 _gridId, uint256 claimTime) external view returns (uint256);
-    function calculateGridDistance(uint256 _fromGridId, uint256 _toGridId) external view returns (uint256);
+    function calculateMiningOutput(
+        uint256 _citadelId, 
+        uint256 _gridId, 
+        uint256 claimTime
+    ) external view returns (uint256);
+    function calculateGridDistance(
+        uint256 _fromGridId, 
+        uint256 _toGridId
+    ) external view returns (uint256);
+    function calculateDestroyedFleet(
+        uint256[] memory _offensivePilotIds,
+        uint256[] memory _defensivePilotIds,
+        uint256[7] memory _fleetTracker
+    ) external view returns (uint256, uint256, uint256, uint256, uint256, uint256);
 }
 
 interface IFLEETENGINE {
-        function calculateTrainingCost(        
+    function getTrainedFleet(uint256 _citadelId) external view returns (
+        uint256, uint256, uint256
+    );
+    function resolveTraining(uint256 _citadelId) external;
+    function trainFleet(
+        uint256 _citadelId, 
         uint256 _sifGattaca, 
         uint256 _mhrudvogThrot, 
         uint256 _drebentraakht
-    ) external view returns (uint256, uint256);
+    ) external;
 }
 
 contract CitadelGameV1 is Ownable, ReentrancyGuard {
@@ -51,7 +67,13 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 toCitadelId,
         uint256 timeRaidHit,
         uint256 offensiveCarryCapacity,
-        uint256 drakmaRaided
+        uint256 drakmaRaided,
+        uint256 offensiveSifGattacaDestroyed,
+        uint256 offensiveMhrudvogThrotDestroyed,
+        uint256 offensiveDrebentraakhtDestroyed,
+        uint256 defensiveSifGattacaDestroyed,
+        uint256 defensiveMhrudvogThrotDestroyed,
+        uint256 defensiveDrebentraakhtDestroyed
     );
 
     // data structures
@@ -74,13 +96,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 drebentraakht;
     }
 
-    struct AllFleet {
-        Fleet fleet;
-        Fleet trainingFleet;
-        bool isValue;
-        uint256 trainingDone;
-    }
-
     struct Raid {
         uint256 toCitadel;
         Fleet fleet;
@@ -90,7 +105,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
     // mappings
     mapping(uint256 => CitadelStaked) citadel; // index is _citadelId
-    mapping(uint256 => AllFleet) fleet; // index is _citadelId
+    mapping(uint256 => Fleet) destroyedFleet; // index is _citadelId
     mapping(uint256 => Raid) raids; // index is _fromCitadelId
     mapping(uint256 => bool) grid; // index is _gridId
 
@@ -153,10 +168,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].timeLastRaided = blockTimeNow;
         citadel[_citadelId].isLit = true;
         citadel[_citadelId].isOnline = true;
-        if(!fleet[_citadelId].isValue) {
-            fleet[_citadelId].isValue = true;
-            fleet[_citadelId].fleet = Fleet(10,2,0);
-        }
         grid[_gridId] = true;
     }
 
@@ -229,35 +240,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         return miningStartTime;
     }
 
-    function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
-        require(
-            citadel[_citadelId].walletAddress == msg.sender,
-            "must own citadel to train"
-        );
-        require(
-            citadel[_citadelId].isLit == true && citadel[_citadelId].isOnline == true,
-            "citadel must be lit and online to train fleet"
-        );
-        resolveTraining(_citadelId);
-        require(
-            fleet[_citadelId].trainingDone == 0,
-            "cannot train new fleet until previous has finished"
-        );
-
-        (uint256 trainingCost, uint256 timeTrainingDone) = fleetEngine.calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
-        require(
-            block.timestamp + timeTrainingDone < periodFinish,
-            "cannot train fleet passed the end of the season"
-        );
-
-        require(drakma.transferFrom(msg.sender, address(this), trainingCost));
-
-        fleet[_citadelId].trainingDone = timeTrainingDone;
-        fleet[_citadelId].trainingFleet.sifGattaca = _sifGattaca;
-        fleet[_citadelId].trainingFleet.mhrudvogThrot = _mhrudvogThrot;
-        fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
-    }
-
     function sendRaid(
         uint256 _fromCitadel, 
         uint256 _toCitadel, 
@@ -280,13 +262,18 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             "defending citadel must be lit and online to raid"
         );
 
-        // move fully trained citadel out of training queue
-        resolveTraining(_fromCitadel);
+        fleetEngine.resolveTraining(_fromCitadel);
+        (
+            uint256 totalSifGattaca, 
+            uint256 totalMhrudvogThrot, 
+            uint256 totalDrebentraakht
+        ) = getCitadelFleetCount(_fromCitadel);
+
         require(
-            _sifGattaca <= fleet[_fromCitadel].fleet.sifGattaca &&
-            _mhrudvogThrot <= fleet[_fromCitadel].fleet.mhrudvogThrot &&
-             _drebentraakht <= fleet[_fromCitadel].fleet.drebentraakht,
-            "cannot send more fleet than are trained"
+            _sifGattaca <= totalSifGattaca &&
+            _mhrudvogThrot <= totalMhrudvogThrot &&
+             _drebentraakht <= totalDrebentraakht,
+            "cannot send more fleet than in citadel"
         );
         require(
             _sifGattaca + _mhrudvogThrot + _drebentraakht >= minFleet,
@@ -321,11 +308,10 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             );
         }
 
-
         raids[_fromCitadel] = Raid(_toCitadel, Fleet(_sifGattaca, _mhrudvogThrot, _drebentraakht), _pilot, timeRaidHits);
-        fleet[_fromCitadel].fleet.sifGattaca -= _sifGattaca;
-        fleet[_fromCitadel].fleet.mhrudvogThrot -= _mhrudvogThrot;
-        fleet[_fromCitadel].fleet.drebentraakht -= _drebentraakht;
+        destroyedFleet[_fromCitadel].sifGattaca += _sifGattaca;
+        destroyedFleet[_fromCitadel].mhrudvogThrot += _mhrudvogThrot;
+        destroyedFleet[_fromCitadel].drebentraakht += _drebentraakht;
         citadel[_fromCitadel].isOnline = false;
         citadel[_toCitadel].isOnline = false;
 
@@ -345,68 +331,74 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         resolveRaidInternal(_fromCitadel);
     }
 
-    // internal functions
+
+    /*
+            fleet tracker storage trick
+            [0] defendingSifGattaca, 
+            [1] defendingMhrudvogThrot, 
+            [2] defendingDrebentraakht,
+            [3] offensiveSifGattacaDestroyed,
+            [4] offensiveMhrudvogThrotDestroyed,
+            [5] offensiveDrebentraakhtDestroyed,
+            [6] defensiveSifGattacaDestroyed,
+            [7] defensiveMhrudvogThrotDestroyed,
+            [8] defensiveDrebentraakhtDestroyed
+    */
     function resolveRaidInternal(uint256 _fromCitadel) internal {
         uint256 toCitadel = raids[_fromCitadel].toCitadel;
-        resolveTraining(toCitadel);
+        fleetEngine.resolveTraining(toCitadel);
 
         // if left on grid 24 hours from hit time, fleet to defenders defect
         if(lastTimeRewardApplicable() > (raids[_fromCitadel].timeRaidHits + raidMaxExpiry)) {
-            fleet[toCitadel].fleet.sifGattaca += raids[_fromCitadel].fleet.sifGattaca;
-            fleet[toCitadel].fleet.mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
-            fleet[toCitadel].fleet.drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
+            destroyedFleet[toCitadel].sifGattaca -= raids[_fromCitadel].fleet.sifGattaca;
+            destroyedFleet[toCitadel].mhrudvogThrot -= raids[_fromCitadel].fleet.mhrudvogThrot;
+            destroyedFleet[toCitadel].drebentraakht -= raids[_fromCitadel].fleet.drebentraakht;
             citadel[toCitadel].isOnline = true;
             citadel[_fromCitadel].isOnline = true;
             delete raids[_fromCitadel];
             return;
         }
+        
+        uint256[9] memory fleetTracker;
+        (
+            fleetTracker[0], 
+            fleetTracker[1], 
+            fleetTracker[2]
+        ) = getCitadelFleetCount(toCitadel);
 
-        uint256 combatOP = combatEngine.combatOP(
-            _fromCitadel, 
+        uint256[7] memory tempTracker;
+        tempTracker[0] = raids[_fromCitadel].fleet.sifGattaca;
+        tempTracker[1] = raids[_fromCitadel].fleet.mhrudvogThrot;
+        tempTracker[2] = raids[_fromCitadel].fleet.drebentraakht;
+        tempTracker[3] = toCitadel;
+        tempTracker[4] = fleetTracker[0];
+        tempTracker[5] = fleetTracker[1];
+        tempTracker[6] = fleetTracker[2];
+        (
+            fleetTracker[3],
+            fleetTracker[4],
+            fleetTracker[5],
+            fleetTracker[6],
+            fleetTracker[7],
+            fleetTracker[8]
+        ) = combatEngine.calculateDestroyedFleet(
             raids[_fromCitadel].pilot, 
-            raids[_fromCitadel].fleet.sifGattaca, 
-            raids[_fromCitadel].fleet.mhrudvogThrot, 
-            raids[_fromCitadel].fleet.drebentraakht
-        );
-        uint256 combatDP = combatEngine.combatDP(
-            toCitadel, 
-            citadel[toCitadel].pilot, 
-            fleet[toCitadel].fleet.sifGattaca, 
-            fleet[toCitadel].fleet.mhrudvogThrot, 
-            fleet[toCitadel].fleet.drebentraakht
+            citadel[toCitadel].pilot,
+            tempTracker
         );
 
         // update fleet count of defender
-        fleet[toCitadel].fleet.sifGattaca = 
-            fleet[toCitadel].fleet.sifGattaca - (
-            fleet[toCitadel].fleet.sifGattaca * combatDP * 25
-        ) / ((combatOP + combatDP) * 100);
-        
-        fleet[toCitadel].fleet.mhrudvogThrot = 
-            fleet[toCitadel].fleet.mhrudvogThrot - (
-            fleet[toCitadel].fleet.mhrudvogThrot * combatDP * 25
-        ) / ((combatOP + combatDP) * 100);
-        
-        fleet[toCitadel].fleet.drebentraakht = 
-            fleet[toCitadel].fleet.drebentraakht - (
-            fleet[toCitadel].fleet.drebentraakht * combatDP * 25
-        ) / ((combatOP + combatDP) * 100);
+        destroyedFleet[toCitadel].sifGattaca += fleetTracker[6];
+        destroyedFleet[toCitadel].mhrudvogThrot = fleetTracker[7];
+        destroyedFleet[toCitadel].drebentraakht = fleetTracker[8];
 
         // update fleet count of raider
         raids[_fromCitadel].fleet.sifGattaca = 
-            raids[_fromCitadel].fleet.sifGattaca - (
-            raids[_fromCitadel].fleet.sifGattaca * combatOP * 25
-        ) / ((combatOP + combatDP) * 100);
-
+            raids[_fromCitadel].fleet.sifGattaca - fleetTracker[3];
         raids[_fromCitadel].fleet.mhrudvogThrot = 
-            raids[_fromCitadel].fleet.mhrudvogThrot - (
-                raids[_fromCitadel].fleet.mhrudvogThrot * combatOP * 25
-        ) / ((combatOP + combatDP) * 100);
-
+            raids[_fromCitadel].fleet.mhrudvogThrot - fleetTracker[4];
         raids[_fromCitadel].fleet.drebentraakht = 
-            raids[_fromCitadel].fleet.drebentraakht - (
-            raids[_fromCitadel].fleet.drebentraakht * combatOP * 25
-        ) / ((combatOP + combatDP) * 100);
+            raids[_fromCitadel].fleet.drebentraakht - fleetTracker[5];
 
         // transfer dk
         uint256 drakmaAvailable = combatEngine.calculateMiningOutput(
@@ -431,31 +423,25 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_fromCitadel].isOnline = true;
         
         // return fleet and empty raid
-        fleet[_fromCitadel].fleet.sifGattaca += raids[_fromCitadel].fleet.sifGattaca;
-        fleet[_fromCitadel].fleet.mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
-        fleet[_fromCitadel].fleet.drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
+        destroyedFleet[_fromCitadel].sifGattaca -= raids[_fromCitadel].fleet.sifGattaca;
+        destroyedFleet[_fromCitadel].mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
+        destroyedFleet[_fromCitadel].drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
 
         emit DispatchRaid(
             _fromCitadel,
             toCitadel,
             raids[_fromCitadel].timeRaidHits,
             drakmaCarry,
-            dkToTransfer
+            dkToTransfer,
+            fleetTracker[3],
+            fleetTracker[4],
+            fleetTracker[5],
+            fleetTracker[6],
+            fleetTracker[7],
+            fleetTracker[8]
         );
 
         delete raids[_fromCitadel];
-    }
-
-    function resolveTraining(uint256 _citadelId) public {
-        if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
-            fleet[_citadelId].trainingDone = 0;
-            fleet[_citadelId].fleet.sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
-            fleet[_citadelId].trainingFleet.sifGattaca = 0;
-            fleet[_citadelId].fleet.mhrudvogThrot += fleet[_citadelId].trainingFleet.mhrudvogThrot;
-            fleet[_citadelId].trainingFleet.mhrudvogThrot = 0;
-            fleet[_citadelId].fleet.drebentraakht += fleet[_citadelId].trainingFleet.drebentraakht;
-            fleet[_citadelId].trainingFleet.drebentraakht = 0;
-        }
     }
 
     // only owner
@@ -481,28 +467,24 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     function getCitadelFleetCount(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
-        uint256 sifGattaca = fleet[_citadelId].fleet.sifGattaca;
-        uint256 mhrudvogThrot = fleet[_citadelId].fleet.mhrudvogThrot;
-        uint256 drebentraakht = fleet[_citadelId].fleet.drebentraakht;
-        if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
-            sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
-            mhrudvogThrot += fleet[_citadelId].trainingFleet.mhrudvogThrot;
-            drebentraakht += fleet[_citadelId].trainingFleet.drebentraakht;
-        }
-        return (sifGattaca, mhrudvogThrot, drebentraakht);
-    }
-
-    function getCitadelFleetCountTraining(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
-        uint256 sifGattaca = 0;
-        uint256 mhrudvogThrot = 0;
-        uint256 drebentraakht = 0;
-        if(fleet[_citadelId].trainingDone >= lastTimeRewardApplicable()) {
-            sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
-            mhrudvogThrot += fleet[_citadelId].trainingFleet.mhrudvogThrot;
-            drebentraakht += fleet[_citadelId].trainingFleet.drebentraakht;
-        }
+        (
+            uint256 trainedSifGattaca, 
+            uint256 trainedMhrudvogThrot, 
+            uint256 trainedDrebentraakht
+        ) = fleetEngine.getTrainedFleet(_citadelId);
         
-        return (sifGattaca, mhrudvogThrot, drebentraakht);
+        if(
+            trainedSifGattaca >= destroyedFleet[_citadelId].sifGattaca &&
+            trainedMhrudvogThrot >= destroyedFleet[_citadelId].mhrudvogThrot &&
+            trainedDrebentraakht >= destroyedFleet[_citadelId].drebentraakht
+        ) {
+            return (
+                trainedSifGattaca - destroyedFleet[_citadelId].sifGattaca,
+                trainedMhrudvogThrot - destroyedFleet[_citadelId].mhrudvogThrot,
+                trainedDrebentraakht - destroyedFleet[_citadelId].drebentraakht
+            );
+        }
+        return (0,0,0);
     }
 
     function getCitadel(uint256 _citadelId) public view returns (address, uint256, uint8, uint256, bool) {
