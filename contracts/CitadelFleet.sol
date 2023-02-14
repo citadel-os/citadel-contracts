@@ -120,6 +120,19 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
         );
     }
 
+    function getFleetInTraining(uint256 _citadelId) public view returns (
+        uint256, uint256, uint256
+    ) {
+        if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
+            return (
+                fleet[_citadelId].trainingFleet.sifGattaca,
+                fleet[_citadelId].trainingFleet.mhrudvogThrot,
+                fleet[_citadelId].trainingFleet.drebentraakht
+            );
+        }
+        return (0,0,0);
+    }
+
     function calculateTrainedFleet(uint256 _citadelId) internal view returns (uint256, uint256, uint256) {
         //TODO factor in time training started
         if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
