@@ -22,6 +22,7 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
         Fleet trainingFleet;
         uint256 trainingStarted;
         uint256 trainingDone;
+        bool isValue;
     }
 
     constructor(IERC20 _drakma) {
@@ -52,6 +53,12 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
         );
 
         require(drakma.transferFrom(msg.sender, address(this), trainingCost));
+
+        // allocate 10 sifGattaca on first train
+        if(!fleet[_citadelId].isValue) {
+            fleet[_citadelId].fleet.sifGattaca = 10;
+            fleet[_citadelId].isValue = true;
+        }
 
         fleet[_citadelId].trainingStarted = lastTimeRewardApplicable();
         fleet[_citadelId].trainingDone = timeTrainingDone;
@@ -120,21 +127,7 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
         );
     }
 
-    function getFleetInTraining(uint256 _citadelId) public view returns (
-        uint256, uint256, uint256
-    ) {
-        if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
-            return (
-                fleet[_citadelId].trainingFleet.sifGattaca,
-                fleet[_citadelId].trainingFleet.mhrudvogThrot,
-                fleet[_citadelId].trainingFleet.drebentraakht
-            );
-        }
-        return (0,0,0);
-    }
-
-    function calculateTrainedFleet(uint256 _citadelId) internal view returns (uint256, uint256, uint256) {
-        //TODO factor in time training started
+    function calculateTrainedFleet(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
         if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
             return(
                 fleet[_citadelId].trainingFleet.sifGattaca, 
@@ -142,7 +135,31 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
                 fleet[_citadelId].trainingFleet.drebentraakht
             );
         }
-        return (0, 0, 0);
+
+        uint256 sifGattacaTrained = 0;
+        uint256 mhrudvogThrotTrained = 0;
+        uint256 drebentraakhtTrained = 0;
+        uint256 timeHolder = fleet[_citadelId].trainingStarted;
+
+        sifGattacaTrained = (block.timestamp - timeHolder) / sifGattacaTrainingTime > fleet[_citadelId].trainingFleet.sifGattaca 
+            ? fleet[_citadelId].trainingFleet.sifGattaca 
+            : (block.timestamp - timeHolder) / sifGattacaTrainingTime;
+        
+        if(sifGattacaTrained == fleet[_citadelId].trainingFleet.sifGattaca) {
+            timeHolder += (sifGattacaTrainingTime * sifGattacaTrained);
+            mhrudvogThrotTrained = (block.timestamp - timeHolder) / mhrudvogThrotTrainingTime > fleet[_citadelId].trainingFleet.mhrudvogThrot
+                ? fleet[_citadelId].trainingFleet.mhrudvogThrot 
+                : (block.timestamp - timeHolder) / mhrudvogThrotTrainingTime;
+        }
+
+        if(mhrudvogThrotTrained == fleet[_citadelId].trainingFleet.mhrudvogThrot) {
+            timeHolder += (mhrudvogThrotTrainingTime * mhrudvogThrotTrained);
+            drebentraakhtTrained = (block.timestamp - timeHolder) / drebentraakhtTrainingTime > fleet[_citadelId].trainingFleet.drebentraakht
+                ? fleet[_citadelId].trainingFleet.drebentraakht
+                : (block.timestamp - timeHolder) / drebentraakhtTrainingTime;
+        }
+        
+        return (sifGattacaTrained, mhrudvogThrotTrained, drebentraakhtTrained);
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
