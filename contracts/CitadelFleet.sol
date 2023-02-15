@@ -25,10 +25,6 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
         bool isValue;
     }
 
-    constructor(IERC20 _drakma) {
-        drakma = _drakma;
-    }
-
     mapping(uint256 => FleetTraining) fleet; // index is _citadelId
 
     uint256 periodFinish = 1735700987; //JAN 1 2025, 2PM PT 
@@ -39,6 +35,10 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
     uint256 mhrudvogThrotTrainingTime = 15 minutes;
     uint256 drebentraakhtTrainingTime = 1 hours;
 
+    constructor(IERC20 _drakma) {
+        drakma = _drakma;
+    }
+
     function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
         resolveTraining(_citadelId);
         require(
@@ -48,15 +48,15 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
 
         (uint256 trainingCost, uint256 timeTrainingDone) = calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
         require(
-            block.timestamp + timeTrainingDone < periodFinish,
+            timeTrainingDone < periodFinish,
             "cannot train fleet passed the end of the season"
         );
 
         require(drakma.transferFrom(msg.sender, address(this), trainingCost));
 
-        // allocate 10 sifGattaca on first train
+        // allocate 100 sifGattaca on first train
         if(!fleet[_citadelId].isValue) {
-            fleet[_citadelId].fleet.sifGattaca = 10;
+            fleet[_citadelId].fleet.sifGattaca = 100;
             fleet[_citadelId].isValue = true;
         }
 
@@ -68,22 +68,14 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
     }
 
     function resolveTraining(uint256 _citadelId) public {
-        // TODO resolve partially done
         if(fleet[_citadelId].trainingDone <= lastTimeRewardApplicable()) {
-            (
-                uint256 trainedSifGattaca, 
-                uint256 trainedMhrudvogThrot, 
-                uint256 trainedDrebentraakht
-            ) = calculateTrainedFleet(_citadelId);
-
-
             fleet[_citadelId].trainingDone = 0;
             fleet[_citadelId].trainingStarted = 0;
-            fleet[_citadelId].fleet.sifGattaca += trainedSifGattaca;
+            fleet[_citadelId].fleet.sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
             fleet[_citadelId].trainingFleet.sifGattaca = 0;
-            fleet[_citadelId].fleet.mhrudvogThrot += trainedMhrudvogThrot;
+            fleet[_citadelId].fleet.mhrudvogThrot += fleet[_citadelId].trainingFleet.mhrudvogThrot;
             fleet[_citadelId].trainingFleet.mhrudvogThrot = 0;
-            fleet[_citadelId].fleet.drebentraakht += trainedDrebentraakht;
+            fleet[_citadelId].fleet.drebentraakht += fleet[_citadelId].trainingFleet.drebentraakht;
             fleet[_citadelId].trainingFleet.drebentraakht = 0;
         }
     }
@@ -93,16 +85,16 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
         uint256 _mhrudvogThrot, 
         uint256 _drebentraakht
     ) public view returns (uint256, uint256) {
+        uint256 trainingCost = 0;
+        trainingCost += _sifGattaca * sifGattacaPrice;
+        trainingCost += _mhrudvogThrot * mhrudvogThrotPrice;
+        trainingCost += _drebentraakht * drebentraakhtPrice;
+
         uint256 timeTrainingDone = 0;
         timeTrainingDone = _sifGattaca * sifGattacaTrainingTime;
         timeTrainingDone += _mhrudvogThrot * mhrudvogThrotTrainingTime;
         timeTrainingDone += _drebentraakht * drebentraakhtTrainingTime;
         timeTrainingDone += lastTimeRewardApplicable();
-
-        uint256 trainingCost = 0;
-        trainingCost += _sifGattaca * sifGattacaPrice;
-        trainingCost += _mhrudvogThrot * mhrudvogThrotPrice;
-        trainingCost += _drebentraakht * drebentraakhtPrice;
 
         return (trainingCost, timeTrainingDone);
     }
@@ -124,6 +116,22 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
             sifGattaca + trainedSifGattaca, 
             mhrudvogThrot + trainedMhrudvogThrot, 
             drebentraakht + trainedDrebentraakht
+        );
+    }
+
+    function getFleetInTraining(uint256 _citadelId) public view returns (
+        uint256, uint256, uint256
+    ) {
+        (
+            uint256 trainedSifGattaca, 
+            uint256 trainedMhrudvogThrot, 
+            uint256 trainedDrebentraakht
+        ) = calculateTrainedFleet(_citadelId);
+
+        return (
+            fleet[_citadelId].trainingFleet.sifGattaca - trainedSifGattaca, 
+            fleet[_citadelId].trainingFleet.mhrudvogThrot - trainedMhrudvogThrot, 
+            fleet[_citadelId].trainingFleet.drebentraakht - trainedDrebentraakht
         );
     }
 

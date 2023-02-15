@@ -312,7 +312,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         destroyedFleet[_fromCitadel].sifGattaca += _sifGattaca;
         destroyedFleet[_fromCitadel].mhrudvogThrot += _mhrudvogThrot;
         destroyedFleet[_fromCitadel].drebentraakht += _drebentraakht;
-        citadel[_fromCitadel].isOnline = false;
         citadel[_toCitadel].isOnline = false;
 
         if (gridDistance <= subgridDistortion) {
@@ -334,15 +333,24 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
     /*
             fleet tracker storage trick
-            [0] defendingSifGattaca, 
-            [1] defendingMhrudvogThrot, 
-            [2] defendingDrebentraakht,
-            [3] offensiveSifGattacaDestroyed,
-            [4] offensiveMhrudvogThrotDestroyed,
-            [5] offensiveDrebentraakhtDestroyed,
-            [6] defensiveSifGattacaDestroyed,
-            [7] defensiveMhrudvogThrotDestroyed,
+            [0] defendingSifGattaca
+            [1] defendingMhrudvogThrot 
+            [2] defendingDrebentraakht
+            [3] offensiveSifGattacaDestroyed
+            [4] offensiveMhrudvogThrotDestroyed
+            [5] offensiveDrebentraakhtDestroyed
+            [6] defensiveSifGattacaDestroyed
+            [7] defensiveMhrudvogThrotDestroyed
             [8] defensiveDrebentraakhtDestroyed
+
+            tempTracker storage trick
+            [0] = raids[_fromCitadel].fleet.sifGattaca
+            [1] = raids[_fromCitadel].fleet.mhrudvogThrot
+            [2] = raids[_fromCitadel].fleet.drebentraakht
+            [3] = toCitadel
+            [4] = defendingSifGattaca
+            [5] = defendingMhrudvogThrot
+            [6] = defendingDrebentraakht
     */
     function resolveRaidInternal(uint256 _fromCitadel) internal {
         uint256 toCitadel = raids[_fromCitadel].toCitadel;
@@ -353,6 +361,9 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             destroyedFleet[toCitadel].sifGattaca -= raids[_fromCitadel].fleet.sifGattaca;
             destroyedFleet[toCitadel].mhrudvogThrot -= raids[_fromCitadel].fleet.mhrudvogThrot;
             destroyedFleet[toCitadel].drebentraakht -= raids[_fromCitadel].fleet.drebentraakht;
+            destroyedFleet[_fromCitadel].sifGattaca += raids[_fromCitadel].fleet.sifGattaca;
+            destroyedFleet[_fromCitadel].mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
+            destroyedFleet[_fromCitadel].drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
             citadel[toCitadel].isOnline = true;
             citadel[_fromCitadel].isOnline = true;
             delete raids[_fromCitadel];
@@ -389,16 +400,16 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
         // update fleet count of defender
         destroyedFleet[toCitadel].sifGattaca += fleetTracker[6];
-        destroyedFleet[toCitadel].mhrudvogThrot = fleetTracker[7];
-        destroyedFleet[toCitadel].drebentraakht = fleetTracker[8];
+        destroyedFleet[toCitadel].mhrudvogThrot += fleetTracker[7];
+        destroyedFleet[toCitadel].drebentraakht += fleetTracker[8];
 
-        // update fleet count of raider
-        raids[_fromCitadel].fleet.sifGattaca = 
-            raids[_fromCitadel].fleet.sifGattaca - fleetTracker[3];
-        raids[_fromCitadel].fleet.mhrudvogThrot = 
-            raids[_fromCitadel].fleet.mhrudvogThrot - fleetTracker[4];
-        raids[_fromCitadel].fleet.drebentraakht = 
-            raids[_fromCitadel].fleet.drebentraakht - fleetTracker[5];
+        // return fleet and empty raid
+        destroyedFleet[_fromCitadel].sifGattaca -= 
+            (raids[_fromCitadel].fleet.sifGattaca - fleetTracker[3]);
+        destroyedFleet[_fromCitadel].mhrudvogThrot -= 
+            (raids[_fromCitadel].fleet.mhrudvogThrot - fleetTracker[4]);
+        destroyedFleet[_fromCitadel].drebentraakht -= 
+            (raids[_fromCitadel].fleet.drebentraakht - fleetTracker[5]);
 
         // transfer dk
         uint256 drakmaAvailable = combatEngine.calculateMiningOutput(
@@ -408,9 +419,9 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         ) + citadel[toCitadel].unclaimedDrakma;
 
         uint256 drakmaCarry = (
-            (raids[_fromCitadel].fleet.sifGattaca * sifGattacaCary) +
-            (raids[_fromCitadel].fleet.mhrudvogThrot * mhrudvogThrotCary) +
-            (raids[_fromCitadel].fleet.drebentraakht * drebentraakhtCary)
+            ((raids[_fromCitadel].fleet.sifGattaca - fleetTracker[3]) * sifGattacaCary) +
+            ((raids[_fromCitadel].fleet.mhrudvogThrot - fleetTracker[4]) * mhrudvogThrotCary) +
+            ((raids[_fromCitadel].fleet.drebentraakht - fleetTracker[5]) * drebentraakhtCary)
         );
 
         uint256 dkToTransfer = drakmaAvailable > drakmaCarry ? drakmaCarry : drakmaAvailable;
@@ -420,12 +431,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         drakma.safeTransfer(msg.sender, (dkToTransfer / 10));
         citadel[toCitadel].timeLastRaided = lastTimeRewardApplicable();
         citadel[toCitadel].isOnline = true;
-        citadel[_fromCitadel].isOnline = true;
-        
-        // return fleet and empty raid
-        destroyedFleet[_fromCitadel].sifGattaca -= raids[_fromCitadel].fleet.sifGattaca;
-        destroyedFleet[_fromCitadel].mhrudvogThrot += raids[_fromCitadel].fleet.mhrudvogThrot;
-        destroyedFleet[_fromCitadel].drebentraakht += raids[_fromCitadel].fleet.drebentraakht;
 
         emit DispatchRaid(
             _fromCitadel,
@@ -440,7 +445,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             fleetTracker[7],
             fleetTracker[8]
         );
-
         delete raids[_fromCitadel];
     }
 

@@ -1,6 +1,9 @@
 var chai = require("chai");
 const expect = chai.expect;
 const { BN, expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
+require('@openzeppelin/test-helpers/configure')({
+  provider: 'http://127.0.0.1:8545',
+});
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
 
@@ -48,25 +51,16 @@ describe("combat engine v1", function () {
     });
     
     describe("combat engine", function () {
-      let sifGattacaOP = 0;
-      let mhrudvogThrotOP = 0;
-      let drebentraakhtOP = 0;
-      let sifGattacaDP = 0;
-      let mhrudvogThrotDP = 0;
-      let drebentraakhtDP = 0;
-      let pilotMultiple = 0;
-      let levelMultiple = 0;
+      let sifGattacaOP = 10;
+      let mhrudvogThrotOP = 5;
+      let drebentraakhtOP = 500;
+      let sifGattacaDP = 5;
+      let mhrudvogThrotDP = 40;
+      let drebentraakhtDP = 250;
+      let pilotMultiple = 20;
+      let levelMultiple = 2;
 
       beforeEach(async function () {
-        sifGattacaOP = await this.combatEngineV1.sifGattacaOP();
-        mhrudvogThrotOP = await this.combatEngineV1.mhrudvogThrotOP();
-        drebentraakhtOP = await this.combatEngineV1.drebentraakhtOP();
-        sifGattacaDP = await this.combatEngineV1.sifGattacaDP();
-        mhrudvogThrotDP = await this.combatEngineV1.mhrudvogThrotDP();
-        drebentraakhtDP = await this.combatEngineV1.drebentraakhtDP();
-        pilotMultiple = await this.combatEngineV1.pilotMultiple();
-        levelMultiple = await this.combatEngineV1.levelMultiple();
-
         await this.pilotNFT.reservePILOT(256);
         await this.citadelNFT.reserveCitadel(1024);
       });
@@ -81,7 +75,7 @@ describe("combat engine v1", function () {
         let expectedOP = (sifGattaca * sifGattacaOP) + 
           (mhrudvogThrot * mhrudvogThrotOP) +
           (drebentraakht * drebentraakhtOP);
-        let op = await this.combatEngineV1.combatOP(0, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+        let op = await this.combatEngineV1.combatOP(pilot, sifGattaca, mhrudvogThrot, drebentraakht);
         
         expect(op).to.equal(expectedOP);
       });
@@ -97,7 +91,7 @@ describe("combat engine v1", function () {
           (mhrudvogThrot * mhrudvogThrotOP) +
           (drebentraakht * drebentraakhtOP)) *
           (1 + ((pilot.length * pilotMultiple) / 100));
-        let op = await this.combatEngineV1.combatOP(0, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+        let op = await this.combatEngineV1.combatOP(pilot, sifGattaca, mhrudvogThrot, drebentraakht);
         expect(op).to.equal(expectedOP);
       });
 
@@ -117,7 +111,7 @@ describe("combat engine v1", function () {
           (mhrudvogThrot * mhrudvogThrotOP) +
           (drebentraakht * drebentraakhtOP)) *
           (1 + ((pilotMultiple + levelMultiple) / 100));
-        let op = await this.combatEngineV1.combatOP(0, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+        let op = await this.combatEngineV1.combatOP(pilot, sifGattaca, mhrudvogThrot, drebentraakht);
         expect(op).to.equal(expectedOP);
       });
 

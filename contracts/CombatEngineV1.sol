@@ -122,28 +122,28 @@ contract CombatEngineV1 is Ownable {
 
         // offensive fleet destroyed & reuse var
        _fleetTracker[0] = (
-            _fleetTracker[0] * op * 25
+            _fleetTracker[0] * dp * 25
         ) / ((op + dp) * 100);
 
         _fleetTracker[1] = (
-            _fleetTracker[1] * op * 25
+            _fleetTracker[1] * dp * 25
         ) / ((op + dp) * 100);
 
         _fleetTracker[2] = (
-            _fleetTracker[2] * op * 25
+            _fleetTracker[2] * dp * 25
         ) / ((op + dp) * 100);
 
         // defensive fleet destroyed & reuse var
-        _fleetTracker[4] *= (
-            _fleetTracker[4] * dp * 25
+        _fleetTracker[4] = (
+            _fleetTracker[4] * op * 25
         ) / ((op + dp) * 100);
         
         _fleetTracker[5] = (
-            _fleetTracker[5] * dp * 25
+            _fleetTracker[5] * op * 25
         ) / ((op + dp) * 100);
         
         _fleetTracker[6] = (
-            _fleetTracker[6] * dp * 25
+            _fleetTracker[6] * op * 25
         ) / ((op + dp) * 100);
 
         return (
