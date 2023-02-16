@@ -107,13 +107,11 @@ describe("citadel game v1", function () {
           timeLit,
           timeOfLastClaim,
           timeLastRaided,
-          unclaimedDrakma,
-          isOnline
+          unclaimedDrakma
         ] = await this.citadelGameV1.getCitadelMining(40);
         expect(Number(timeOfLastClaim.toString())).to.equal(0);
         expect(Number(timeLit.toString())).to.be.greaterThan(0);
         expect(unclaimedDrakma).to.equal(0);
-        expect(isOnline).to.equal(true);
       });
 
       it("reverts unowned citadel staked", async function () {
@@ -238,12 +236,10 @@ describe("citadel game v1", function () {
           timeLit,
           timeOfLastClaim,
           timeLastRaided,
-          unclaimedDrakma,
-          isOnline
+          unclaimedDrakma
         ] = await this.citadelGameV1.getCitadelMining(40);
         expect(Number(timeOfLastClaim.toString())).to.equal(0);
         expect(unclaimedDrakma).to.equal(0);
-        expect(isOnline).to.equal(false);
 
         gridLit = await this.citadelGameV1.getGrid(512);
         expect(gridLit).to.equal(false);
@@ -333,12 +329,10 @@ describe("citadel game v1", function () {
           timeLit,
           timeOfLastClaim,
           timeLastRaided,
-          unclaimedDrakma,
-          isOnline
+          unclaimedDrakma
         ] = await this.citadelGameV1.getCitadelMining(40);
         expect(Number(timeOfLastClaim.toString())).to.be.greaterThan(0);
         expect(unclaimedDrakma).to.equal(0);
-        expect(isOnline).to.equal(true);
 
         gridLit = await this.citadelGameV1.getGrid(512);
         expect(gridLit).to.equal(true);
@@ -495,22 +489,18 @@ describe("citadel game v1", function () {
           timeLit40,
           timeOfLastClaim40,
           timeLastRaided40,
-          unclaimedDrakma40,
-          isOnline40
+          unclaimedDrakma40
         ] = await this.citadelGameV1.getCitadelMining(40);
         expect(Number(timeLastRaided40.toString())).to.be.greaterThan(0);
         expect(Number(unclaimedDrakma40.toString())).to.equal(0);
-        expect(isOnline40).to.equal(true);
 
         [
           timeLit1023,
           timeOfLastClaim1023,
           timeLastRaided1023,
-          unclaimedDrakma1023,
-          isOnline1023
+          unclaimedDrakma1023
         ] = await this.citadelGameV1.getCitadelMining(1023);
         expect(Number(unclaimedDrakma1023.toString())).to.be.greaterThan(0);
-        expect(isOnline1023).to.equal(true);
 
         drakmaAddr1 = await this.drakma.balanceOf(addr1.address);
         expect(Number(drakmaAddr1.toString())).to.be.greaterThan(0);
@@ -543,19 +533,15 @@ describe("citadel game v1", function () {
           timeLit1023,
           timeOfLastClaim1023,
           timeLastRaided1023,
-          unclaimedDrakma1023,
-          isOnline1023
+          unclaimedDrakma1023
         ] = await this.citadelGameV1.getCitadelMining(1023);
-        expect(isOnline1023).to.equal(true);
 
         [
           timeLit1021,
           timeOfLastClaim1021,
           timeLastRaided1021,
-          unclaimedDrakma1021,
-          isOnline1021
+          unclaimedDrakma1021
         ] = await this.citadelGameV1.getCitadelMining(1021);
-        expect(isOnline1021).to.equal(false);
 
         [
           toCitadel,
@@ -585,18 +571,6 @@ describe("citadel game v1", function () {
         await expectRevert(
           this.citadelGameV1.connect(addr1).sendRaid(40, 1023, [], 100, 0, 0),
           "must own lit citadel to raid"
-        );
-      });
-
-      it("reverts raid to offline citadel", async function () {
-        [owner, addr1] = await ethers.getSigners();
-
-        // put 1021 & 1023 offline
-        await this.citadelGameV1.sendRaid(1021, 1023, [], 100, 0, 0);
-
-        await expectRevert(
-          this.citadelGameV1.sendRaid(40, 1023, [], 100, 0, 0),
-          "defending citadel must be lit and online to raid"
         );
       });
 
