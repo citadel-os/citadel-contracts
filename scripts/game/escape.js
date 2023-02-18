@@ -10,7 +10,7 @@ async function main() {
     const gameV1 = await GameV1.attach(CITADEL_GAMEV1);
 
     await gameV1.escapeHatch(
-        993
+        994
     );
 
 }

@@ -24,6 +24,7 @@ npx hardhat run scripts/interact/interactSovereign.js --network mainnet
 ## deploy
 ```
 npx hardhat run scripts/deploy/deployCitadel.js --network goerli
+npx hardhat run scripts/deploy/deployGameV1.js --network goerli
 ```
 
 ## test
