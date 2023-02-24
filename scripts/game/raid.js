@@ -9,9 +9,12 @@ async function main() {
     const GameV1 = await ethers.getContractFactory("CitadelGameV1");
     const gameV1 = await GameV1.attach(CITADEL_GAMEV1);
 
-    raid = await gameV1.getRaid(998);
-    console.log(raid);
+    // let raid = await gameV1.getRaid(3);
+    // console.log(raid);
 
+
+    let res = await gameV1.resolveRaid(3);
+    console.log(res);
 
 }
 

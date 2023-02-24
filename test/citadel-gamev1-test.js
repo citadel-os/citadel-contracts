@@ -6,6 +6,7 @@ require('@openzeppelin/test-helpers/configure')({
 });
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 chai.use(solidity);
 
@@ -215,9 +216,6 @@ describe("citadel game v1", function () {
 
         ownerOfPilot2 = await this.pilotNFT.ownerOf(2);
         expect(ownerOfPilot2).to.equal(owner.address);
-
-        var drakmaBalance = await this.drakma.balanceOf(owner.address);
-        expect(Number(drakmaBalance.toString())).to.be.greaterThan(0);
 
         [
           walletAddress,
@@ -556,6 +554,81 @@ describe("citadel game v1", function () {
         expect(Number(drebentraakhtRaid.toString())).to.equal(0);
         expect(Number(pilotSentRaid.toString())).to.equal(2);
         expect(Number(timeRaidHits.toString())).to.greaterThan(Number(timeLastRaided1021.toString()))
+      });
+
+      it("resolves distant raid from 1023 to 1021", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.connect(addr1).sendRaid(1023, 1021, [3,4], 100, 0, 0);
+
+        [
+          sifGattaca1023,
+          mhrudvogThrot1023,
+          drebentraakht1023
+        ] = await this.citadelGameV1.getCitadelFleetCount(1023);
+        expect(Number(sifGattaca1023.toString())).to.equal(0);
+        expect(Number(mhrudvogThrot1023.toString())).to.equal(0);
+        expect(Number(drebentraakht1023.toString())).to.equal(0);
+
+        [
+          sifGattaca1021,
+          mhrudvogThrot1021,
+          drebentraakht1021
+        ] = await this.citadelGameV1.getCitadelFleetCount(1021);
+        expect(Number(sifGattaca1021.toString())).to.equal(100);
+        expect(Number(mhrudvogThrot1021.toString())).to.equal(0);
+        expect(Number(drebentraakht1021.toString())).to.equal(0);
+
+        [
+          timeLit1023,
+          timeOfLastClaim1023,
+          timeLastRaided1023,
+          unclaimedDrakma1023
+        ] = await this.citadelGameV1.getCitadelMining(1023);
+
+        [
+          timeLit1021,
+          timeOfLastClaim1021,
+          timeLastRaided1021,
+          unclaimedDrakma1021
+        ] = await this.citadelGameV1.getCitadelMining(1021);
+
+        [
+          toCitadel,
+          sifGattacaRaid,
+          mhrudvogThrotRaid,
+          drebentraakhtRaid,
+          pilotSentRaid,
+          timeRaidHits,
+        ] = await this.citadelGameV1.getRaid(1023);
+        expect(Number(toCitadel.toString())).to.equal(1021);
+        expect(Number(sifGattacaRaid.toString())).to.equal(100);
+        expect(Number(drebentraakhtRaid.toString())).to.equal(0);
+        expect(Number(pilotSentRaid.toString())).to.equal(2);
+        expect(Number(timeRaidHits.toString())).to.greaterThan(Number(timeLastRaided1021.toString()));
+
+        // fast forward block time to simulate fleet desertion
+        await time.increase(432000); // 5 days
+        await this.citadelGameV1.resolveRaid(1023);
+        [
+          sifGattaca1021,
+          mhrudvogThrot1021,
+          drebentraakht1021
+        ] = await this.citadelGameV1.getCitadelFleetCount(1021);
+        expect(Number(sifGattaca1021.toString())).to.be.greaterThanOrEqual(200);
+        expect(Number(mhrudvogThrot1021.toString())).to.equal(0);
+        expect(Number(drebentraakht1021.toString())).to.equal(0);
+
+        [
+          toCitadel,
+          sifGattacaRaid,
+          mhrudvogThrotRaid,
+          drebentraakhtRaid,
+          pilotSentRaid,
+          timeRaidHits,
+        ] = await this.citadelGameV1.getRaid(1023);
+        expect(Number(toCitadel.toString())).to.equal(0);
+        expect(Number(timeRaidHits.toString())).to.be.equal(0);
       });
 
       it("reverts raid sent to same citadel", async function () {
