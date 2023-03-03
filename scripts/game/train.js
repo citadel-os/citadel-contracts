@@ -24,6 +24,10 @@ async function main() {
     // let res = await fleetV1.resolveTraining(CITADELID);
     // console.log(res);
 
+    //uint256 _citadelId, int256 _sifGattaca, int256 _mhrudvogThrot, int256 _drebentraakht
+    let train = await fleetV1.trainFleet(3, 200, 0, 0);
+    console.log(train);
+
 }
 
 main();

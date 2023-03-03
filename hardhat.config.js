@@ -47,10 +47,14 @@ module.exports = {
     goerli: {
       url: API_URL,
       accounts: [`0x${PRIVATE_KEY}`],
-      // gas: "auto",
-      // gasMultiplier: 1.5,
-      gasLimit: 3e7,
-      gasPrice: 12
+      gas: "auto",
+      gasMultiplier: 1.5
+    },
+    arbitrumgoerli: {
+      url: API_URL,
+      accounts: [`0x${PRIVATE_KEY}`],
+      gas: "auto",
+      gasMultiplier: 1.5
     },
   },
   etherscan: {

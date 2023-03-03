@@ -298,12 +298,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         }
 
         // raids immediate when subgrid open
-        uint256 timeRaidHits = lastTimeRewardApplicable();
-        uint256 gridDistance = combatEngine.calculateGridDistance(citadel[_fromCitadel].gridId, citadel[_toCitadel].gridId);
-        
-        if (gridDistance > subgridDistortion) {
-            timeRaidHits += (gridDistance * gridTraversalTime);
-        }
+        (uint256 timeRaidHits, uint256 gridDistance) = calculateRaidTraversal(_fromCitadel, _toCitadel);
 
         require(
             timeRaidHits < periodFinish,
@@ -533,5 +528,16 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
                 raids[_fromCitadelId].pilot.length,
                 raids[_fromCitadelId].timeRaidHits
         );
+    }
+
+    function calculateRaidTraversal(uint256 _fromCitadel, uint256 _toCitadel) public view returns (uint256, uint256) {
+        uint256 timeRaidHits = lastTimeRewardApplicable();
+        uint256 gridDistance = combatEngine.calculateGridDistance(citadel[_fromCitadel].gridId, citadel[_toCitadel].gridId);
+        
+        if (gridDistance > subgridDistortion) {
+            timeRaidHits += (gridDistance * gridTraversalTime);
+        }
+
+        return (timeRaidHits, gridDistance);
     }
 }
