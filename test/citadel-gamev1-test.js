@@ -96,13 +96,11 @@ describe("citadel game v1", function () {
           gridId,
           factionId,
           pilotCount,
-          isLit
         ] = await this.citadelGameV1.getCitadel(40);
         expect(walletAddress).to.equal(owner.address);
         expect(gridId).to.equal(512);
         expect(factionId).to.equal(1);
         expect(pilotCount).to.equal(2);
-        expect(isLit).to.equal(true);
 
         [
           timeLit,
@@ -120,7 +118,7 @@ describe("citadel game v1", function () {
 
         await expectRevert(
           this.citadelGameV1.connect(addr1).liteGrid(40, [1,2], 512, 1),
-          "must own citadel to stake"
+          "must own citadel"
         );
       });
 
@@ -221,14 +219,12 @@ describe("citadel game v1", function () {
           walletAddress,
           gridId,
           factionId,
-          pilotCount,
-          isLit
+          pilotCount
         ] = await this.citadelGameV1.getCitadel(40);
         expect(walletAddress).to.equal("0x0000000000000000000000000000000000000000");
         expect(gridId).to.equal(0);
         expect(factionId).to.equal(0);
         expect(pilotCount).to.equal(0);
-        expect(isLit).to.equal(false);
 
         [
           timeLit,
@@ -255,7 +251,7 @@ describe("citadel game v1", function () {
 
         await expectRevert(
           this.citadelGameV1.connect(addr1).dimGrid(40),
-          "must own lit citadel to withdraw"
+          "must own citadel"
         );
 
         ownerOfCitadel40 = await this.citadelNFT.ownerOf(40);
@@ -275,7 +271,7 @@ describe("citadel game v1", function () {
 
         await expectRevert(
           this.citadelGameV1.dimGrid(40),
-          "must own lit citadel to withdraw"
+          "must own citadel"
         );
 
         ownerOfCitadel40 = await this.citadelNFT.ownerOf(40);
@@ -314,14 +310,12 @@ describe("citadel game v1", function () {
           walletAddress,
           gridId,
           factionId,
-          pilotCount,
-          isLit
+          pilotCount
         ] = await this.citadelGameV1.getCitadel(40);
         expect(walletAddress).to.equal(owner.address);
         expect(gridId).to.equal(512);
         expect(factionId).to.equal(1);
         expect(pilotCount).to.equal(2);
-        expect(isLit).to.equal(true);
 
         [
           timeLit,
@@ -348,7 +342,7 @@ describe("citadel game v1", function () {
 
         await expectRevert(
           this.citadelGameV1.connect(addr1).claim(40),
-          "must own citadel to claim"
+          "must own citadel"
         );
 
         ownerOfCitadel40 = await this.citadelNFT.ownerOf(40);
@@ -366,7 +360,7 @@ describe("citadel game v1", function () {
 
         await expectRevert(
           this.citadelGameV1.connect(addr1).claim(40),
-          "must own citadel to claim"
+          "must own citadel"
         );
       });
 
@@ -643,7 +637,7 @@ describe("citadel game v1", function () {
         [owner, addr1] = await ethers.getSigners();
         await expectRevert(
           this.citadelGameV1.connect(addr1).sendRaid(40, 1023, [], 100, 0, 0),
-          "must own lit citadel to raid"
+          "must own citadel"
         );
       });
 
@@ -686,6 +680,122 @@ describe("citadel game v1", function () {
 
     });
 
+    describe("reinforcements", function () {
+
+      beforeEach(async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 40);
+        await this.citadelGameV1.liteGrid(40, [], 512, 1);
+        await this.drakma.mintDrakma(owner.address, "20000000000000000000");
+        await this.drakma.approve(this.citadelFleetV1.address, "20000000000000000000");
+        await this.citadelFleetV1.trainFleet(40, 1, 0, 0);
+
+        await this.citadelNFT.approve(this.citadelGameV1.address, 1021);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 1);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 2);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 5);
+        await this.pilotNFT.approve(this.citadelGameV1.address, 6);
+        await this.citadelGameV1.liteGrid(1021, [1,2,5,6], 1, 1);
+        await this.drakma.mintDrakma(owner.address, "20000000000000000000");
+        await this.drakma.approve(this.citadelFleetV1.address, "20000000000000000000");
+        await this.citadelFleetV1.trainFleet(1021, 1, 0, 0);
+
+        await this.citadelNFT.transferFrom(owner.address, addr1.address, 1023);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 3);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 4);
+        await this.citadelNFT.connect(addr1).approve(this.citadelGameV1.address, 1023);
+        await this.pilotNFT.connect(addr1).approve(this.citadelGameV1.address, 3);
+        await this.pilotNFT.connect(addr1).approve(this.citadelGameV1.address, 4);
+        await this.citadelGameV1.connect(addr1).liteGrid(1023, [3,4], 513, 2);
+        await this.drakma.mintDrakma(owner.address, "20000000000000000000");
+        await this.drakma.approve(this.citadelFleetV1.address, "20000000000000000000");
+        await this.citadelFleetV1.trainFleet(1023, 1, 0, 0);
+
+      });
+
+      it("sends direct neighbor reinforcements from 40 to 1023", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.sendReinforcements(40, 1023, 100, 0, 0);
+
+        [
+          sifGattaca40,
+          mhrudvogThrot40,
+          drebentraakht40
+        ] = await this.citadelGameV1.getCitadelFleetCount(40);
+        expect(Number(sifGattaca40.toString())).to.equal(0);
+        expect(Number(mhrudvogThrot40.toString())).to.equal(0);
+        expect(Number(drebentraakht40.toString())).to.equal(0);
+
+        [
+          sifGattaca1023,
+          mhrudvogThrot1023,
+          drebentraakht1023
+        ] = await this.citadelGameV1.getCitadelFleetCount(1023);
+        expect(Number(sifGattaca1023.toString())).to.equal(100);
+        expect(Number(mhrudvogThrot1023.toString())).to.equal(0);
+        expect(Number(drebentraakht1023.toString())).to.equal(0);
+
+      });
+
+      it("sends distant reinforcments from 1023 to 1021", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.connect(addr1).sendReinforcements(1023, 1021, 100, 0, 0);
+
+        [
+          sifGattaca1023,
+          mhrudvogThrot1023,
+          drebentraakht1023
+        ] = await this.citadelGameV1.getCitadelFleetCount(1023);
+        expect(Number(sifGattaca1023.toString())).to.equal(0);
+        expect(Number(mhrudvogThrot1023.toString())).to.equal(0);
+        expect(Number(drebentraakht1023.toString())).to.equal(0);
+
+        [
+          sifGattaca1021,
+          mhrudvogThrot1021,
+          drebentraakht1021
+        ] = await this.citadelGameV1.getCitadelFleetCount(1021);
+        expect(Number(sifGattaca1021.toString())).to.equal(100);
+        expect(Number(mhrudvogThrot1021.toString())).to.equal(0);
+        expect(Number(drebentraakht1021.toString())).to.equal(0);
+
+      });
+
+      it("reverts reinforcements from unowned citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await expectRevert(
+          this.citadelGameV1.sendReinforcements(1023, 40, 100, 0, 0),
+          "must own citadel"
+        );
+      });
+
+      it("reverts reinforcements with too many fleet sent", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await expectRevert(
+          this.citadelGameV1.sendReinforcements(40, 1023, 200, 0, 0),
+          "cannot send more fleet than in citadel"
+        );
+      });
+
+      it("reverts multiple reinforcements in flight", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV1.sendReinforcements(40, 1023, 10, 0, 0);
+
+        await expectRevert(
+          this.citadelGameV1.sendReinforcements(40, 1023, 10, 0, 0),
+          "only one reinforcement in flight"
+        );
+      });
+    });
+
     describe("admin", function () {
 
       beforeEach(async function () {
@@ -719,18 +829,18 @@ describe("citadel game v1", function () {
       it("reverts escape hatch of unowned CITADEL", async function () {
         [owner, addr1] = await ethers.getSigners();
 
-        await this.citadelGameV1.updateGameParams(1674943200, 1, 1800, true);
+        await this.citadelGameV1.updateGameParams(1674943200, true);
 
         await expectRevert(
           this.citadelGameV1.escapeHatch(1023),
-          "must own lit citadel to withdraw"
+          "must own citadel"
         );
       });
 
       it("uses escape hatch", async function () {
         [owner, addr1] = await ethers.getSigners();
 
-        await this.citadelGameV1.updateGameParams(1674943200, 1, 1800, true);
+        await this.citadelGameV1.updateGameParams(1674943200, true);
 
         await this.citadelGameV1.escapeHatch(40);
 

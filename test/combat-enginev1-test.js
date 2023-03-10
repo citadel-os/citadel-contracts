@@ -9,7 +9,7 @@ const { ethers } = require("hardhat");
 
 chai.use(solidity);
 
-describe("combat engine v1", function () {
+describe.only("combat engine v1", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
@@ -244,6 +244,17 @@ describe("combat engine v1", function () {
         let dist6 = await this.combatEngineV1.calculateGridDistance(0, 106);
         expect(dist6).to.equal(10);
 
+        let dist7 = await this.combatEngineV1.calculateGridDistance(512, 513);
+        expect(dist7).to.equal(1);
+
+      });
+
+      it("calculates grid traversal", async function () {
+
+        let arr = await this.combatEngineV1.calculateGridTraversal(512, 513);
+        let timeRaidHits = arr[0];
+        let gridDistance = arr[1];
+        expect(gridDistance).to.equal(1);
       });
 
 

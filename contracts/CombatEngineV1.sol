@@ -25,6 +25,8 @@ contract CombatEngineV1 is Ownable {
     uint256 sifGattacaDP = 5;
     uint256 mhrudvogThrotDP = 40;
     uint256 drebentraakhtDP = 250;
+    uint256 public subgridDistortion = 1;
+    uint256 public gridTraversalTime = 30 minutes;
 
     uint256 periodFinish = 1735700987; //JAN 1 2025, 2PM PT
     
@@ -122,28 +124,28 @@ contract CombatEngineV1 is Ownable {
 
         // offensive fleet destroyed & reuse var
        _fleetTracker[0] = (
-            _fleetTracker[0] * dp * 25
+            _fleetTracker[0] * op * 50
         ) / ((op + dp) * 100);
 
         _fleetTracker[1] = (
-            _fleetTracker[1] * dp * 25
+            _fleetTracker[1] * op * 50
         ) / ((op + dp) * 100);
 
         _fleetTracker[2] = (
-            _fleetTracker[2] * dp * 25
+            _fleetTracker[2] * op * 50
         ) / ((op + dp) * 100);
 
         // defensive fleet destroyed & reuse var
         _fleetTracker[4] = (
-            _fleetTracker[4] * op * 25
+            _fleetTracker[4] * dp * 50
         ) / ((op + dp) * 100);
         
         _fleetTracker[5] = (
-            _fleetTracker[5] * op * 25
+            _fleetTracker[5] * dp * 50
         ) / ((op + dp) * 100);
         
         _fleetTracker[6] = (
-            _fleetTracker[6] * op * 25
+            _fleetTracker[6] * dp * 50
         ) / ((op + dp) * 100);
 
         return (
@@ -273,15 +275,31 @@ contract CombatEngineV1 is Ownable {
         return Math.sqrt(uint256((int(_a % 32) - int(_b % 32))**2 + (int(_a / 32) - int(_b / 32))**2));
     }
 
+    function calculateGridTraversal(uint256 _gridA, uint256 _gridB) public view returns (uint256, uint256) {
+        uint256 timeRaidHits = lastTimeRewardApplicable();
+        uint256 gridDistance = calculateGridDistance(_gridA, _gridB);
+        
+        if (gridDistance > subgridDistortion) {
+            timeRaidHits += (gridDistance * gridTraversalTime);
+        }
+
+        return (timeRaidHits, gridDistance);
+    }
+
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
     function updateGameParams(
         uint256 _periodFinish, 
-        uint256 _baseMiningRatePerHour
+        uint256 _baseMiningRatePerHour,
+        uint256 _subgridDistortion,
+        uint256 _gridTraversalTime
+
     ) external onlyOwner {
         periodFinish = _periodFinish;
         baseMiningRatePerHour = _baseMiningRatePerHour;
+        subgridDistortion = _subgridDistortion;
+        gridTraversalTime = _gridTraversalTime;
     }
 }

@@ -8,12 +8,12 @@ async function main() {
     const PilotNFT = await ethers.getContractFactory("PilotNFT");
     const pilotNFT = await PilotNFT.attach(PILOT_NFT);
 
-    // await pilotNFT.updateBaseURI(
-    //   "https://gateway.pinata.cloud/ipfs/QmPQP6TwL5A3yrdtw5cYP4DcbbuuhdfRZrRmzYvgQSemPi/"
-    // );
+    await pilotNFT.updateBaseURI(
+      "https://gateway.pinata.cloud/ipfs/QmSeHzeCvL4P6xDodBmQr1HC67vefABb3Ey4vDkmEqmW9h/"
+    );
 
-    tx = await pilotNFT.updateClaimParams(false);
-    console.log(tx);
+    // tx = await pilotNFT.updateClaimParams(false);
+    // console.log(tx);
 
     // tx = await pilotNFT.updateClaimParams(true);
     // console.log(tx);

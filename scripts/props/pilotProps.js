@@ -4,6 +4,7 @@ const PILOT_MAX = 2048;
 let PILOT = [];
 pilotToReveal = [
     5,
+    6,
     258,
     259,
     260,
@@ -141,7 +142,17 @@ pilotToReveal = [
     392,
     393,
     394,
-    395
+    395,
+    396,
+    397,
+    398,
+    399,
+    400,
+    401,
+    402,
+    403,
+    404,
+    405
 ];
 
 
@@ -155,7 +166,7 @@ function main() {
         let pilot = JSON.parse(rawdata);
         pilot.image = "https://gateway.pinata.cloud/ipfs/QmPqgDBStUJeKa6bYugsX5WjpYDaypMaHJBzZnYjX7qztH";
         if(pilotToReveal.find(element => element == i)) {
-            pilot.image = "https://gateway.pinata.cloud/ipfs/QmZrZBrcdadnivW7GE7nyS5qP45CUkiqUngzDtymLoctxS/PILOT" + i + ".png";
+            pilot.image = "https://gateway.pinata.cloud/ipfs/QmSU8q21MWaQfMK68oFDzHF6wxdEjscpiZ4jYmSWUHg1Xd/PILOT" + i + ".png";
         }
 
         PILOT[i] = pilot;
