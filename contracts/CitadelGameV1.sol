@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 interface ICOMBATENGINE {
     function combatOP(
@@ -353,7 +352,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleetDebit[_fromCitadel].sifGattaca += int256(_sifGattaca);
         fleetDebit[_fromCitadel].mhrudvogThrot += int256(_mhrudvogThrot);
         fleetDebit[_fromCitadel].drebentraakht += int256(_drebentraakht);
-        console.log(gridDistance);
         if (gridDistance <= combatEngine.subgridDistortion()) {
             resolveRaidInternal(_fromCitadel);
         }
@@ -530,20 +528,20 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
     function getCitadelFleetCount(uint256 _citadelId) public view returns (int256, int256, int256) {
         (
-            int256 trainedSifGattaca, 
-            int256 trainedMhrudvogThrot, 
-            int256 trainedDrebentraakht
+            int256 sifGattaca, 
+            int256 mhrudvogThrot, 
+            int256 drebentraakht
         ) = fleetEngine.getTrainedFleet(_citadelId);
         
         if(
-            trainedSifGattaca >= fleetDebit[_citadelId].sifGattaca &&
-            trainedMhrudvogThrot >= fleetDebit[_citadelId].mhrudvogThrot &&
-            trainedDrebentraakht >= fleetDebit[_citadelId].drebentraakht
+            sifGattaca >= fleetDebit[_citadelId].sifGattaca &&
+            mhrudvogThrot >= fleetDebit[_citadelId].mhrudvogThrot &&
+            drebentraakht >= fleetDebit[_citadelId].drebentraakht
         ) {
             return (
-                trainedSifGattaca - fleetDebit[_citadelId].sifGattaca,
-                trainedMhrudvogThrot - fleetDebit[_citadelId].mhrudvogThrot,
-                trainedDrebentraakht - fleetDebit[_citadelId].drebentraakht
+                sifGattaca - fleetDebit[_citadelId].sifGattaca,
+                mhrudvogThrot - fleetDebit[_citadelId].mhrudvogThrot,
+                drebentraakht - fleetDebit[_citadelId].drebentraakht
             );
         }
         return (0,0,0);
@@ -563,11 +561,16 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     }
 
     function getCitadelMining(uint256 _citadelId) public view returns (uint256, uint256, uint256, uint256) {
+        uint256 drakmaToClaim = combatEngine.calculateMiningOutput(
+            _citadelId, 
+            citadel[_citadelId].gridId, 
+            getMiningStartTime(_citadelId)
+        ) + citadel[_citadelId].unclaimedDrakma;
         return (
                 citadel[_citadelId].timeLit,
                 citadel[_citadelId].timeOfLastClaim,
                 citadel[_citadelId].timeLastRaided,
-                citadel[_citadelId].unclaimedDrakma
+                drakmaToClaim
         );
     }
 
