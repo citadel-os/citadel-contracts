@@ -9,7 +9,7 @@ const { ethers } = require("hardhat");
 
 chai.use(solidity);
 
-describe("combat engine v1", function () {
+describe.only("combat engine v1", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
@@ -316,6 +316,23 @@ describe("combat engine v1", function () {
 
         let multiple4 = await this.combatEngineV1.getGridMultiple(1023);
         expect(multiple4).to.equal(0);
+
+      });
+
+      it("creates a doom riot", async function () {
+
+        let multiple0 = await this.combatEngineV1.getGridMultiple(0);
+        expect(multiple0).to.equal(0);
+
+        await this.combatEngineV1.doomRiot(0, 35);
+        
+        multiple0 = await this.combatEngineV1.getGridMultiple(0);
+        expect(multiple0).to.equal(35);
+
+        await this.combatEngineV1.doomRiot(0, 0);
+
+        multiple0 = await this.combatEngineV1.getGridMultiple(0);
+        expect(multiple0).to.equal(0);
 
       });
 
