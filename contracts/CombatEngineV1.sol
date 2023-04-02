@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 interface IPILOT {
     function getOnchainPILOT(uint256 tokenId) external view returns (bool, uint8);
@@ -122,30 +123,32 @@ contract CombatEngineV1 is Ownable {
             _fleetTracker[6]
         );
 
+        (op, dp) = adjustedOPDP(op, dp);
+
         // offensive fleet destroyed & reuse var
        _fleetTracker[0] = (
-            _fleetTracker[0] * op * 50
+            _fleetTracker[0] * dp * 50
         ) / ((op + dp) * 100);
 
         _fleetTracker[1] = (
-            _fleetTracker[1] * op * 50
+            _fleetTracker[1] * dp * 50
         ) / ((op + dp) * 100);
 
         _fleetTracker[2] = (
-            _fleetTracker[2] * op * 50
+            _fleetTracker[2] * dp * 50
         ) / ((op + dp) * 100);
 
         // defensive fleet destroyed & reuse var
         _fleetTracker[4] = (
-            _fleetTracker[4] * dp * 50
+            _fleetTracker[4] * op * 50
         ) / ((op + dp) * 100);
         
         _fleetTracker[5] = (
-            _fleetTracker[5] * dp * 50
+            _fleetTracker[5] * op * 50
         ) / ((op + dp) * 100);
         
         _fleetTracker[6] = (
-            _fleetTracker[6] * dp * 50
+            _fleetTracker[6] * op * 50
         ) / ((op + dp) * 100);
 
         return (
@@ -157,6 +160,29 @@ contract CombatEngineV1 is Ownable {
             _fleetTracker[6]
         );
     }
+
+    function adjustedOPDP(uint256 op, uint256 dp) public view returns (uint256, uint256) {
+        uint256 ratio = (op * 100) / dp;
+        uint256 exponent;
+        if (ratio < 25) {
+            exponent = 6;
+        } else if (ratio < 50) {
+            exponent = 5;
+        } else if (ratio < 75) {
+            exponent = 4;
+        } else if (ratio < 100) {
+            exponent = 3;
+        } else if (ratio < 125) {
+            exponent = 2;
+        } else {
+            exponent = 1;
+        }
+
+        return (
+            (op * op) / (op + (2 * dp) / exponent),
+            (dp * dp) / (dp + (2 * op) / exponent)
+        );
+    }  
 
     function calculateMiningOutput(
         uint256 _citadelId, 

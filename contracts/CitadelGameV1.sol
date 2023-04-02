@@ -487,7 +487,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
 
         uint256 dkToTransfer = drakmaAvailable > drakmaCarry ? drakmaCarry : drakmaAvailable;
         
-        citadel[toCitadel].unclaimedDrakma += (drakmaAvailable - dkToTransfer);
+        citadel[toCitadel].unclaimedDrakma = (drakmaAvailable - dkToTransfer);
         citadel[_fromCitadel].unclaimedDrakma += (dkToTransfer * 9) / 10;
         drakma.safeTransfer(msg.sender, (dkToTransfer / 10));
         citadel[toCitadel].timeLastRaided = lastTimeRewardApplicable();

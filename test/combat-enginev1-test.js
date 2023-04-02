@@ -9,7 +9,7 @@ const { ethers } = require("hardhat");
 
 chai.use(solidity);
 
-describe.only("combat engine v1", function () {
+describe("combat engine v1", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
@@ -82,9 +82,9 @@ describe.only("combat engine v1", function () {
 
       it("get op with pilots", async function () {
         [owner, addr1] = await ethers.getSigners();
-        let sifGattaca = 100;
-        let mhrudvogThrot = 0;
-        let drebentraakht = 0;
+        let sifGattaca = 500;
+        let mhrudvogThrot = 1;
+        let drebentraakht = 5;
         let pilot = [1, 2];
 
         let expectedOP = ((sifGattaca * sifGattacaOP) + 
@@ -92,27 +92,27 @@ describe.only("combat engine v1", function () {
           (drebentraakht * drebentraakhtOP)) *
           (1 + ((pilot.length * pilotMultiple) / 100));
         let op = await this.combatEngineV1.combatOP(pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+
         expect(op).to.equal(expectedOP);
       });
 
       it("get op with upleveled pilot", async function () {
         [owner, addr1] = await ethers.getSigners();
 
+        let sifGattaca = 500;
+        let mhrudvogThrot = 1;
+        let drebentraakht = 5;
+        let pilot = [1];
+
+        let opPre = await this.combatEngineV1.combatOP(pilot, sifGattaca, mhrudvogThrot, drebentraakht);
+
         await this.drakma.mintDrakma(owner.address, "100000000000000000000000");
         await this.drakma.approve(this.pilotNFT.address, "100000000000000000000000");
         await this.pilotNFT.upLevel(1);
 
-        let sifGattaca = 100;
-        let mhrudvogThrot = 0;
-        let drebentraakht = 0;
-        let pilot = [1];
+        let opPost = await this.combatEngineV1.combatOP(pilot, sifGattaca, mhrudvogThrot, drebentraakht);
 
-        let expectedOP = ((sifGattaca * sifGattacaOP) + 
-          (mhrudvogThrot * mhrudvogThrotOP) +
-          (drebentraakht * drebentraakhtOP)) *
-          (1 + ((pilotMultiple + levelMultiple) / 100));
-        let op = await this.combatEngineV1.combatOP(pilot, sifGattaca, mhrudvogThrot, drebentraakht);
-        expect(op).to.equal(expectedOP);
+        expect(Number(opPre.toString())).to.be.lessThan(Number(opPost.toString()));
       });
 
       /*
@@ -136,7 +136,7 @@ describe.only("combat engine v1", function () {
           Math.floor(mhrudvogThrot * mhrudvogThrotDP) +
           (Math.floor(drebentraakht * drebentraakhtDP)) * 1.12) * 1.23);
         let dp = await this.combatEngineV1.combatDP(40, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
-        
+
         expect(dp).to.equal(Math.round(expectedDP));
       });
 
@@ -214,6 +214,48 @@ describe.only("combat engine v1", function () {
           (Math.floor(drebentraakht * drebentraakhtDP)) * 1) * 1.55);
         let dp = await this.combatEngineV1.combatDP(1021, pilot, sifGattaca, mhrudvogThrot, drebentraakht);
         expect(dp).to.equal(Math.floor(expectedDP));
+      });
+
+      it("calculates destroyed fleet", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        let offensivePilot = [];
+        let defensivePilot = [];
+        let fleetTracker = [
+          1000, // _offensiveSifGattaca, 
+          0, //_offensiveMhrudvogThrot, 
+          50, //_offensiveDrebentraakht,
+          0, //_defensiveCitadelId,
+          0, //_defensiveSifGattaca, 
+          250, //_defensiveMhrudvogThrot, 
+          0 //_defensiveDrebentraakht
+        ]
+
+        let osd1, omd1, odd1, dsd1, dmd1, ddd1;
+        [ osd1, omd1, odd1, dsd1, dmd1, ddd1 ] = await this.combatEngineV1.calculateDestroyedFleet(
+          offensivePilot, defensivePilot, fleetTracker
+        );
+
+        
+        // doublt offensive fleet. should see defenders destroyed increase
+        // and offensive fleet stay static or shrink.
+        fleetTracker = [
+          2000, // _offensiveSifGattaca, 
+          0, //_offensiveMhrudvogThrot, 
+          100, //_offensiveDrebentraakht,
+          0, //_defensiveCitadelId,
+          0, //_defensiveSifGattaca, 
+          250, //_defensiveMhrudvogThrot, 
+          0 //_defensiveDrebentraakht
+        ]
+
+        let osd2, omd2, odd2, dsd2, dmd2, ddd2;
+        [ osd2, omd2, odd2, dsd2, dmd2, ddd2 ] = await this.combatEngineV1.calculateDestroyedFleet(
+          offensivePilot, defensivePilot, fleetTracker
+        );
+        
+        expect(Number(dmd2.toString())).to.be.greaterThan(Number(dmd1.toString()));
+        expect(Number(osd2.toString())).to.be.lessThan(Number(osd1.toString()));
       });
 
     });

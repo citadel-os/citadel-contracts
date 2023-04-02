@@ -230,10 +230,10 @@ describe("citadel game v1", function () {
           timeLit,
           timeOfLastClaim,
           timeLastRaided,
-          unclaimedDrakma
+          drakmaToClaim
         ] = await this.citadelGameV1.getCitadelMining(40);
         expect(Number(timeOfLastClaim.toString())).to.equal(0);
-        expect(unclaimedDrakma).to.equal(0);
+        expect(Number(drakmaToClaim.toString())).to.be.greaterThan(0);
 
         gridLit = await this.citadelGameV1.getGrid(512);
         expect(gridLit).to.equal(false);
