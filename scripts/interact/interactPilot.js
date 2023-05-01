@@ -9,8 +9,10 @@ async function main() {
     const pilotNFT = await PilotNFT.attach(PILOT_NFT);
 
     await pilotNFT.updateBaseURI(
-      "https://gateway.pinata.cloud/ipfs/QmSeHzeCvL4P6xDodBmQr1HC67vefABb3Ey4vDkmEqmW9h/"
+      "https://gateway.pinata.cloud/ipfs/QmboggQM8emj7rhxaasaLFRBD5f686Zvs2R6TC3L8LaCgZ/"
     );
+
+    await pilotNFT.reservePILOT(256);
 
     // tx = await pilotNFT.updateClaimParams(false);
     // console.log(tx);
@@ -25,7 +27,7 @@ async function main() {
     // tx = await pilotNFT.withdrawEth();
     // console.log(tx);
 
-    // tx = await pilotNFT.withdrawDrakma("22732000000000000000000000");
+    // tx = await pilotNFT.withdrawDrakma("13000000000000000000000000");
     // console.log(tx);
 
     // sovereignCounter = await pilotNFT.sovereignCounter();

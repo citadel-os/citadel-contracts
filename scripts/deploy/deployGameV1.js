@@ -15,17 +15,17 @@ async function main() {
   const weiAmount = (await deployer.getBalance()).toString();
   console.log("account balance:", await ethers.utils.formatEther(weiAmount));
 
-  // const CombatEngineV1 = await ethers.getContractFactory("CombatEngineV1");
-  // const combatEngineV1 = await CombatEngineV1.deploy(
-  //   PILOT_NFT
-  // );
-  // console.log("combat engine deployed to address:", combatEngineV1.address);
+  const CombatEngineV1 = await ethers.getContractFactory("CombatEngineV1");
+  const combatEngineV1 = await CombatEngineV1.deploy(
+    PILOT_NFT
+  );
+  console.log("combat engine deployed to address:", combatEngineV1.address);
 
-  // const CitadelFleetV1 = await ethers.getContractFactory("CitadelFleetV1");
-  // const citadelFleetV1 = await CitadelFleetV1.deploy(
-  //   DRAKMA_ADDRESS
-  // );
-  // console.log("fleet engine deployed to address:", citadelFleetV1.address);
+  const CitadelFleetV1 = await ethers.getContractFactory("CitadelFleetV1");
+  const citadelFleetV1 = await CitadelFleetV1.deploy(
+    DRAKMA_ADDRESS
+  );
+  console.log("fleet engine deployed to address:", citadelFleetV1.address);
 
   const CitadelGameV1 = await ethers.getContractFactory("CitadelGameV1");
   const citadelGameV1 = await CitadelGameV1.deploy(

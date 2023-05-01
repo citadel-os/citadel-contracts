@@ -152,7 +152,21 @@ pilotToReveal = [
     402,
     403,
     404,
-    405
+    405,
+    406,
+    407,
+    408,
+    409,
+    410,
+    411,
+    412,
+    413,
+    414,
+    415,
+    416,
+    417,
+    418,
+    419
 ];
 
 
@@ -166,7 +180,7 @@ function main() {
         let pilot = JSON.parse(rawdata);
         pilot.image = "https://gateway.pinata.cloud/ipfs/QmPqgDBStUJeKa6bYugsX5WjpYDaypMaHJBzZnYjX7qztH";
         if(pilotToReveal.find(element => element == i)) {
-            pilot.image = "https://gateway.pinata.cloud/ipfs/QmSU8q21MWaQfMK68oFDzHF6wxdEjscpiZ4jYmSWUHg1Xd/PILOT" + i + ".png";
+            pilot.image = "https://gateway.pinata.cloud/ipfs/QmW4gh9P3GKJ3mKjahkAofDkXuWSmahwHdQ8Hz3F42Xx2W/PILOT" + i + ".png";
         }
 
         PILOT[i] = pilot;

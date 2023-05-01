@@ -10,18 +10,7 @@ async function main() {
     tx = await sovereign.resetClaims();
     console.log(tx);
 
-    // tx = await pilotNFT.updateClaimParams(true);
-    // console.log(tx);
 
-    //uint256 _pilotPrice, uint256 _pilotMintMax, bool _pilotMintOn, uint256 _sovereignPrice, uint256 _kultPrice
-    // tx = await pilotNFT.updateMintParams("125000000000000000", 0, false, "4000000000000000000000000", "100000000000000000000000");
-    // console.log(tx);
-
-    // tx = await pilotNFT.withdrawEth();
-    // console.log(tx);
-
-    // tx = await pilotNFT.withdrawDrakma("288000000000000000000000000");
-    // console.log(tx);
 
     // sovereignCounter = await pilotNFT.sovereignCounter();
     // console.log(sovereignCounter);
