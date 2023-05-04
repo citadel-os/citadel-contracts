@@ -74,7 +74,7 @@ describe("citadel game v1", function () {
         await this.citadelNFT.reserveCitadel(1024);
       });
 
-      it("lites a citadel and 2 pilot to grid", async function () {
+      it.only("lites a citadel and 2 pilot to grid", async function () {
         [owner, addr1] = await ethers.getSigners();
         await this.citadelNFT.approve(this.citadelGameV1.address, 40);
         await this.pilotNFT.approve(this.citadelGameV1.address, 1);
@@ -111,6 +111,8 @@ describe("citadel game v1", function () {
         expect(Number(timeOfLastClaim.toString())).to.equal(0);
         expect(Number(timeLit.toString())).to.be.greaterThan(0);
         expect(unclaimedDrakma).to.equal(0);
+
+        console.log(unclaimedDrakma);
       });
 
       it("reverts unowned citadel staked", async function () {

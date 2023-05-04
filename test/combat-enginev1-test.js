@@ -9,7 +9,7 @@ const { ethers } = require("hardhat");
 
 chai.use(solidity);
 
-describe.only("combat engine v1", function () {
+describe("combat engine v1", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");

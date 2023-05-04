@@ -566,6 +566,7 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             citadel[_citadelId].gridId, 
             getMiningStartTime(_citadelId)
         ) + citadel[_citadelId].unclaimedDrakma;
+        
         return (
                 citadel[_citadelId].timeLit,
                 citadel[_citadelId].timeOfLastClaim,
