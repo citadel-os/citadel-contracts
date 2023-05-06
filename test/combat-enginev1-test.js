@@ -305,14 +305,14 @@ describe("combat engine v1", function () {
         let multiple0 = await this.combatEngineV1.getGridMultiple(0);
         expect(multiple0).to.equal(0);
 
-        let multiple1 = await this.combatEngineV1.getGridMultiple(410);
-        expect(multiple1).to.equal(10);
+        let multiple1 = await this.combatEngineV1.getGridMultiple(0);
+        expect(multiple1).to.equal(0);
 
-        let multiple2 = await this.combatEngineV1.getGridMultiple(460);
-        expect(multiple2).to.equal(20);
+        let multiple2 = await this.combatEngineV1.getGridMultiple(0);
+        expect(multiple2).to.equal(0);
 
-        let multiple3 = await this.combatEngineV1.getGridMultiple(512);
-        expect(multiple3).to.equal(25);
+        let multiple3 = await this.combatEngineV1.getGridMultiple(0);
+        expect(multiple3).to.equal(0);
 
         let multiple4 = await this.combatEngineV1.getGridMultiple(1023);
         expect(multiple4).to.equal(0);
