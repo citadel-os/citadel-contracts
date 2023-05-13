@@ -35,6 +35,10 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
     int256 mhrudvogThrotTrainingTime = 15 minutes;
     int256 drebentraakhtTrainingTime = 1 hours;
 
+    event CitadelEvent(
+        uint256 citadelId
+    );
+
     constructor(IERC20 _drakma) {
         drakma = _drakma;
     }
@@ -65,6 +69,10 @@ contract CitadelFleetV1 is Ownable, ReentrancyGuard {
         fleet[_citadelId].trainingFleet.sifGattaca = _sifGattaca;
         fleet[_citadelId].trainingFleet.mhrudvogThrot = _mhrudvogThrot;
         fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
+
+        emit CitadelEvent(
+            _citadelId
+        );
     }
 
     function resolveTraining(uint256 _citadelId) public {

@@ -79,6 +79,10 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         uint256 defensiveDrebentraakhtDestroyed
     );
 
+    event CitadelEvent(
+        uint256 citadelId
+    );
+
     // data structures
     struct CitadelStaked {
         address walletAddress;
@@ -128,7 +132,6 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
     uint256 raidMaxExpiry = 24 hours;
     uint256 claimInterval = 7 days;
     bool escapeHatchOn = false;
-    
 
     constructor(
         IERC721 _citadelCollection, 
@@ -184,6 +187,10 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleetDebit[_citadelId].sifGattaca = int256(trainedSifGattaca);
         fleetDebit[_citadelId].mhrudvogThrot = int256(trainedMhrudvogThrot);
         fleetDebit[_citadelId].drebentraakht = int256(trainedDrebentraakht);
+
+        emit CitadelEvent(
+            _citadelId
+        );
     }
 
     function dimGrid(uint256 _citadelId) external nonReentrant {
@@ -205,6 +212,10 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         citadel[_citadelId].timeLit = 0;
         citadel[_citadelId].timeLastRaided = 0;
         delete citadel[_citadelId].pilot;
+
+        emit CitadelEvent(
+            _citadelId
+        );
     }
 
     function escapeHatch(uint256 _citadelId) external nonReentrant {
@@ -288,6 +299,14 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         fleetDebit[_fromCitadel].sifGattaca += int256(_sifGattaca);
         fleetDebit[_fromCitadel].mhrudvogThrot += int256(_mhrudvogThrot);
         fleetDebit[_fromCitadel].drebentraakht += int256(_drebentraakht);
+
+        emit CitadelEvent(
+            _fromCitadel
+        );
+
+        emit CitadelEvent(
+            _toCitadel
+        );
     }
 
     function sendRaid(
@@ -355,6 +374,14 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
         if (gridDistance <= combatEngine.subgridDistortion()) {
             resolveRaidInternal(_fromCitadel);
         }
+
+        emit CitadelEvent(
+            _fromCitadel
+        );
+
+        emit CitadelEvent(
+            _toCitadel
+        );
     }
 
     function resolveFleet(uint256 _fromCitadel) internal {
@@ -506,6 +533,10 @@ contract CitadelGameV1 is Ownable, ReentrancyGuard {
             fleetTracker[5]
         );
         delete raids[_fromCitadel];
+
+        emit CitadelEvent(
+            _fromCitadel
+        );
     }
 
     // only owner

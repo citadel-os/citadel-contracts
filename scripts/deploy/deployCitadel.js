@@ -12,10 +12,6 @@ async function main() {
   const weiAmount = (await deployer.getBalance()).toString();
   console.log("account balance:", await ethers.utils.formatEther(weiAmount));
 
-  // const Token = await ethers.getContractFactory("Drakma");
-  // const token = await Token.deploy();
-  // console.log("drakma token address:", token.address);
-
   // const CitadelNFT = await ethers.getContractFactory("CitadelNFT");
   // const citadelNFT = await CitadelNFT.deploy(
   //   "CITADEL",
@@ -33,13 +29,15 @@ async function main() {
   // );
   // console.log("exordium contract deployed to address:", citadelExordium.address);
 
-  const PilotNFT = await ethers.getContractFactory("PilotNFT");
-  const pilotNFT = await PilotNFT.deploy(
-    DRAKMA_ADDRESS,
-    CITADEL_EXORDIUM,
-    "https://gateway.pinata.cloud/ipfs/QmXAUrofZA6Z1xmrS6WeMenwz1GfFqN71k5Di61Xe4Axzo/"
-  );
-  console.log("pilot contract deployed to address:", pilotNFT.address);
+  // const PilotNFT = await ethers.getContractFactory("PilotNFT");
+  // const pilotNFT = await PilotNFT.deploy(
+  //   DRAKMA_ADDRESS,
+  //   CITADEL_EXORDIUM,
+  //   "https://gateway.pinata.cloud/ipfs/QmXAUrofZA6Z1xmrS6WeMenwz1GfFqN71k5Di61Xe4Axzo/"
+  // );
+  // console.log("pilot contract deployed to address:", pilotNFT.address);
+  // await pilotNFT.reservePILOT(1024);
+  // console.log("pilot reserved");
 
 }
 

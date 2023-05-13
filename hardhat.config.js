@@ -34,7 +34,13 @@ module.exports = {
       url: API_URL,
       accounts: [`0x${PRIVATE_KEY}`],
       gas: "auto",
-      gasMultiplier: 1.5
+      gasMultiplier: 1
+    },
+    sepolia: {
+      url: API_URL,
+      accounts: [`0x${PRIVATE_KEY}`],
+      gas: "auto",
+      gasMultiplier: 1
     },
     arbitrumgoerli: {
       url: API_URL,

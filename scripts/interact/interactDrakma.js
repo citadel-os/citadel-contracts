@@ -19,8 +19,8 @@ async function main() {
     console.log("drakma symbol is: " + symbol);
     console.log("total supply: " + totalSupply);
 
-    await drakma.mintDrakma("0x68756A6df2280141b55189C7b3099F9e82c09eff", "100000000000000000000000000"); //1,000,000,000 drakma
-    //await drakma.mintDrakma(PUBLIC_KEY, "1000000000000000000000"); // 1000 drakma
+    //await drakma.mintDrakma("0x17b0C91e4F925F9f7522949835e1DC3B202cd838", "1000000000000000000000000000"); //1,000,000,000 drakma
+    //await drakma.mintDrakma(PUBLIC_KEY, "7000000000000000000000000000"); // 10B drakma
 
     var balance = await drakma.balanceOf(PUBLIC_KEY);
     console.log("wallet balance: " + balance);
