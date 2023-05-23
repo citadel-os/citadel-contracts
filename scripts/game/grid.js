@@ -13,8 +13,8 @@ async function main() {
     // console.log(raid);
 
 
-    let res = await gameV1.resolveRaid(3);
-    console.log(res);
+    // let res = await gameV1.resolveRaid(3);
+    // console.log(res);
 
 }
 

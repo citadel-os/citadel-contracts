@@ -16,7 +16,7 @@ async function main() {
   // const citadelNFT = await CitadelNFT.deploy(
   //   "CITADEL",
   //   "CITADEL",
-  //   "https://gateway.pinata.cloud/ipfs/QmXAUrofZA6Z1xmrS6WeMenwz1GfFqN71k5Di61Xe4Axzo/"
+  //   "https://gateway.pinata.cloud/ipfs/QmXXC2PHUeiFtUFVdLNnYodWUNdZnK2jbT8prE6R51mGT6/"
   // );
   // console.log("nft contract deployed to address:", citadelNFT.address);
   // await citadelNFT.reserveCitadel(1024);
@@ -29,15 +29,15 @@ async function main() {
   // );
   // console.log("exordium contract deployed to address:", citadelExordium.address);
 
-  // const PilotNFT = await ethers.getContractFactory("PilotNFT");
-  // const pilotNFT = await PilotNFT.deploy(
-  //   DRAKMA_ADDRESS,
-  //   CITADEL_EXORDIUM,
-  //   "https://gateway.pinata.cloud/ipfs/QmXAUrofZA6Z1xmrS6WeMenwz1GfFqN71k5Di61Xe4Axzo/"
-  // );
-  // console.log("pilot contract deployed to address:", pilotNFT.address);
-  // await pilotNFT.reservePILOT(1024);
-  // console.log("pilot reserved");
+  const PilotNFT = await ethers.getContractFactory("PilotNFT");
+  const pilotNFT = await PilotNFT.deploy(
+    DRAKMA_ADDRESS,
+    CITADEL_EXORDIUM,
+    "https://gateway.pinata.cloud/ipfs/QmboggQM8emj7rhxaasaLFRBD5f686Zvs2R6TC3L8LaCgZ/"
+  );
+  console.log("pilot contract deployed to address:", pilotNFT.address);
+  await pilotNFT.reservePILOT(1280);
+  console.log("pilot reserved");
 
 }
 

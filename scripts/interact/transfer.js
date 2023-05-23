@@ -19,15 +19,19 @@ async function main() {
     const Pilot = await ethers.getContractFactory("PilotNFT");
     const pilot = await Pilot.attach(PILOT_NFT);
 
-    // jsays 0x17b0C91e4F925F9f7522949835e1DC3B202cd838
-    const transferToAddress = "0x56DBD1086A7c9E3A3Aca1414fBA45a99d20Ef05F";
-    await drakma.mintDrakma(transferToAddress, "1000000000000000000000000"); //1M drakma
-    await citadel.transferFrom(PUBLIC_KEY, transferToAddress, 4);
-    await citadel.transferFrom(PUBLIC_KEY, transferToAddress, 5);
-    await pilot.transferFrom(PUBLIC_KEY, transferToAddress, 4);
-    await pilot.transferFrom(PUBLIC_KEY, transferToAddress, 5);
-    await pilot.transferFrom(PUBLIC_KEY, transferToAddress, 6);
-    await pilot.transferFrom(PUBLIC_KEY, transferToAddress, 7);
+    //jsays 0x17b0C91e4F925F9f7522949835e1DC3B202cd838
+    // jobu 0xc71bdB836F0A84Fa33512e7896d9e281A751Fffa
+    // adam 0x99a7F3037693B8d6236be052fAC344C4dC3175f3
+    const transferToAddress = "0xeB57963356A7CaD98ef1bC218e13D925B2A47DAC";
+    await drakma.mintDrakma(transferToAddress, "10000000000000000000000000"); //10M drakma
+    await citadel.transferFrom(PUBLIC_KEY, transferToAddress, 16);
+    await citadel.transferFrom(PUBLIC_KEY, transferToAddress, 17);
+    await citadel.transferFrom(PUBLIC_KEY, transferToAddress, 18);
+    await citadel.transferFrom(PUBLIC_KEY, transferToAddress, 19);
+    await pilot.transferFrom(PUBLIC_KEY, transferToAddress, 16);
+    await pilot.transferFrom(PUBLIC_KEY, transferToAddress, 17);
+    await pilot.transferFrom(PUBLIC_KEY, transferToAddress, 18);
+    await pilot.transferFrom(PUBLIC_KEY, transferToAddress, 19);
     console.log("transfered");
 
 }

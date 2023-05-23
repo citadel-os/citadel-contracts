@@ -12,7 +12,7 @@ async function main() {
       "https://gateway.pinata.cloud/ipfs/QmboggQM8emj7rhxaasaLFRBD5f686Zvs2R6TC3L8LaCgZ/"
     );
 
-    await pilotNFT.reservePILOT(1024);
+    // await pilotNFT.reservePILOT(1024);
 
     // tx = await pilotNFT.updateClaimParams(false);
     // console.log(tx);

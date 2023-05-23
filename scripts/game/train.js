@@ -25,8 +25,14 @@ async function main() {
     // console.log(res);
 
     //uint256 _citadelId, int256 _sifGattaca, int256 _mhrudvogThrot, int256 _drebentraakht
-    let train = await fleetV1.trainFleet(3, 200, 0, 0);
+    // let train = await fleetV1.trainFleet(3, 200, 0, 0);
+    // console.log(train);
+
+    let train = await fleetV1.getTrainedFleet(5);
     console.log(train);
+
+    let inTraining = await fleetV1.getFleetInTraining(5);
+    console.log(inTraining);
 
 }
 
