@@ -33,8 +33,11 @@ module.exports = {
     goerli: {
       url: API_URL,
       accounts: [`0x${PRIVATE_KEY}`],
-      gas: "auto",
-      gasMultiplier: 1
+      // gas: "auto",
+      // gasMultiplier: 1.5
+      gas: 2100000,
+      gasPrice: 8000000000,
+      gasLimit: 5000000
     },
     sepolia: {
       url: API_URL,

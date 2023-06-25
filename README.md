@@ -5,9 +5,11 @@ npx hardhat run scripts/interact/interactDrakma.js --network goerli
 npx hardhat run scripts/deploy/deployCitadel.js --network localhost
 
 node scripts/props/citadelProps.js
+node scripts/props/pilotProps.js
 node scripts/interact/whitelistMerkle.js
 
 npx hardhat run scripts/interact/interactCitadelNFT.js --network mainnet
+npx hardhat run scripts/interact/interactPilot.js --network mainnet
 npx hardhat run scripts/game/raid.js --network goerli
 
 npx hardhat run scripts/interact/interactSovereign.js --network mainnet
