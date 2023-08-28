@@ -1,0 +1,2 @@
+scp -i ~/.ssh/max -r /Users/houseofhufflepuff/Development/citadel-contracts/output/* root@80.78.22.142:/var/www/game.0xcitadel.io/meta/citadel
+scp -i ~/.ssh/max -r /Users/houseofhufflepuff/Development/citadel-contracts/output-pilot-final/* root@80.78.22.142:/var/www/game.0xcitadel.io/meta/pilot

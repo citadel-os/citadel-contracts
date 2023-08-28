@@ -49,3 +49,8 @@ npx hardhat verify --network goerli --constructor-args scripts/verify/game-verif
 ```
 npx hardhat size-contracts
 ```
+
+## transfer
+```
+npx hardhat run scripts/interact/transfer.js --network goerli
+```
