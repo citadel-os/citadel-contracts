@@ -267,20 +267,8 @@ contract StorageV2 is Ownable {
     ) public returns (uint256) {
         require(msg.sender == accessAddress, "cannot call function directly");
 
-        uint256[] memory totalFleet;
         resolveFleet(_fromCitadel);
-        (
-            totalFleet[0],
-            totalFleet[1],
-            totalFleet[2]
-        ) = getCitadelFleetCount(_fromCitadel);
-
-        require(
-            _fleet[0] <= totalFleet[0] &&
-            _fleet[1] <= totalFleet[1] &&
-            _fleet[2] <= totalFleet[2],
-            "cannot send more fleet than in citadel"
-        );
+        validateFleet(_fromCitadel, _fleet);
 
         bool pilotFound = false;
         for (uint256 i; i < _pilot.length; ++i) {
@@ -452,6 +440,48 @@ contract StorageV2 is Ownable {
             fleet[toCitadel].stationedFleet.drebentraakht += reinforcements[_fromCitadel].fleet.drebentraakht;
             delete reinforcements[_fromCitadel];
         }
+    }
+
+    function validateFleet(
+        uint256 _fromCitadel, 
+        uint256[] calldata _fleet
+    ) internal {
+        uint256[3] memory totalFleet;
+        (
+            totalFleet[0],
+            totalFleet[1],
+            totalFleet[2]
+        ) = getCitadelFleetCount(_fromCitadel);
+
+        require(
+            _fleet[0] <= totalFleet[0] &&
+            _fleet[1] <= totalFleet[1] &&
+            _fleet[2] <= totalFleet[2],
+            "cannot send more fleet than in citadel"
+        );
+    }
+
+    function sendReinforcements(
+        uint256 _fromCitadel,
+        uint256 _toCitadel,
+        uint256[] calldata _fleet
+    ) public {
+        require(msg.sender == accessAddress, "cannot call function directly");
+
+        resolveFleet(_fromCitadel);
+        require(reinforcements[_fromCitadel].fleetArrivalTime == 0, "only one reinforcement in flight");
+        validateFleet(_fromCitadel, _fleet);
+
+        (uint256 fleetArrivalTime, ) = combatEngine.calculateGridTraversal(_fromCitadel, _toCitadel);
+
+        reinforcements[_fromCitadel].fleetArrivalTime = fleetArrivalTime;
+        reinforcements[_fromCitadel].toCitadel = _toCitadel;
+        reinforcements[_fromCitadel].fleet.sifGattaca = _fleet[0];
+        reinforcements[_fromCitadel].fleet.mhrudvogThrot = _fleet[1];
+        reinforcements[_fromCitadel].fleet.drebentraakht = _fleet[2];
+        fleet[_fromCitadel].stationedFleet.sifGattaca -= _fleet[0];
+        fleet[_fromCitadel].stationedFleet.mhrudvogThrot -= _fleet[1];
+        fleet[_fromCitadel].stationedFleet.drebentraakht -= _fleet[2];
     }
 
     function getCitadelFleetCount(uint256 _citadelId) public view returns (uint256, uint256, uint256) {

@@ -32,6 +32,11 @@ interface ISTORAGEV2 {
         uint256[] calldata _pilot, 
         uint256[] calldata _fleet
     ) external returns (uint256);
+    function sendReinforcements(
+        uint256 _fromCitadel,
+        uint256 _toCitadel,
+        uint256[] calldata _fleet
+    ) external;
 }
 
 interface ICOMBATENGINE {
@@ -151,6 +156,27 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
 
         emit CitadelEvent(
             _fromCitadel
+        );
+    }
+
+    function sendReinforcements(
+        uint256 _fromCitadel,
+        uint256 _toCitadel,
+        uint256[] calldata _fleet
+    ) external nonReentrant {
+        require(
+            citadelCollection.ownerOf(_fromCitadel) == msg.sender,
+            "must own citadel"
+        );
+
+        storageEngine.sendReinforcements(_fromCitadel, _toCitadel, _fleet);
+
+        emit CitadelEvent(
+            _fromCitadel
+        );
+
+        emit CitadelEvent(
+            _toCitadel
         );
     }
 }
