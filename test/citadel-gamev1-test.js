@@ -10,7 +10,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 chai.use(solidity);
 
-describe.only("citadel game v1", function () {
+describe("citadel game v1", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");

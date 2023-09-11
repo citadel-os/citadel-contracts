@@ -20,10 +20,30 @@ interface ISTORAGEV2 {
         uint256 _citadelId,
         uint256 _pilotId
     ) external;
+    function trainFleet(
+        uint256 _citadelId, 
+        int256 _sifGattaca, 
+        int256 _mhrudvogThrot, 
+        int256 _drebentraakht
+    ) external;
+    function sendRaid(
+        uint256 _fromCitadel, 
+        uint256 _toCitadel, 
+        uint256[] calldata _pilot, 
+        int256[] calldata _fleet
+    ) external returns (uint256);
+}
+
+interface ICOMBATENGINE {
+    function calculateTrainingCost(
+        int256 _sifGattaca, 
+        int256 _mhrudvogThrot, 
+        int256 _drebentraakht
+    ) external returns (int256);
 }
 
 
-contract CitadelGameV2 is Ownable, ReentrancyGuard {
+contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // imports
@@ -31,21 +51,43 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     IERC721 public immutable citadelCollection;
     IERC721 public immutable pilotCollection;
     ISTORAGEV2 public immutable storageEngine;
+    ICOMBATENGINE public immutable combatEngine;
 
     // variables
     uint256 maxGrid = 1023;
     uint8 maxFaction = 4;
 
+    // events
+    event CitadelEvent(
+        uint256 citadelId
+    );
+
+    event DispatchRaid(
+        uint256 fromCitadelId, 
+        uint256 toCitadelId,
+        uint256 timeRaidHit,
+        uint256 offensiveCarryCapacity,
+        uint256 drakmaRaided,
+        uint256 offensiveSifGattacaDestroyed,
+        uint256 offensiveMhrudvogThrotDestroyed,
+        uint256 offensiveDrebentraakhtDestroyed,
+        uint256 defensiveSifGattacaDestroyed,
+        uint256 defensiveMhrudvogThrotDestroyed,
+        uint256 defensiveDrebentraakhtDestroyed
+    );
+
     constructor(
         IERC721 _citadelCollection, 
         IERC721 _pilotCollection, 
         IERC20 _drakma, 
-        ISTORAGEV2 _storageEngine
+        ISTORAGEV2 _storageEngine,
+        ICOMBATENGINE _combatEngine
     ) {
         citadelCollection = _citadelCollection;
         pilotCollection = _pilotCollection;
         drakma = _drakma;
         storageEngine = _storageEngine;
+        combatEngine = _combatEngine;
     }
 
     function liteGrid(uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) external nonReentrant {
@@ -77,6 +119,34 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         uint256 drakmaToClaim = storageEngine.claim(_citadelId);
         if(drakmaToClaim > 0) {
             drakma.safeTransfer(msg.sender, drakmaToClaim);
+        }
+    }
+
+    function trainFleet(uint256 _citadelId, int256 _sifGattaca, int256 _mhrudvogThrot, int256 _drebentraakht) external nonReentrant {
+        require(
+            citadelCollection.ownerOf(_citadelId) == msg.sender,
+            "must own citadel"
+        );
+        int256 trainingCost = combatEngine.calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
+        require(drakma.transferFrom(msg.sender, address(this), uint256(trainingCost)));
+        storageEngine.trainFleet(_citadelId, _sifGattaca, _mhrudvogThrot, _drebentraakht);
+    }
+
+    function sendRaid(
+        uint256 _fromCitadel, 
+        uint256 _toCitadel, 
+        uint256[] calldata _pilot, 
+        int256[] calldata _fleet
+    ) external nonReentrant {
+        require(_fromCitadel != _toCitadel, "cannot raid own citadel");
+        require(
+            citadelCollection.ownerOf(_fromCitadel) == msg.sender,
+            "must own citadel"
+        );
+
+        uint256 dk = storageEngine.sendRaid(_fromCitadel, _toCitadel, _pilot, _fleet);
+        if (dk > 0) {
+            drakma.safeTransfer(msg.sender, dk);
         }
     }
 
