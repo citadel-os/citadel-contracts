@@ -18,7 +18,7 @@ describe.only("warlord technocracy v2", function () {
         this.Drakma = await ethers.getContractFactory("Drakma");
         this.CitadelExordium = await ethers.getContractFactory("CitadelExordium");
         this.CombatEngineV2 = await ethers.getContractFactory("CombatEngineV2");
-        this.TechnocracyStorageV2 = await ethers.getContractFactory("TechnocracyStorageV2");
+        this.StorageV2 = await ethers.getContractFactory("StorageV2");
         this.WarlordTechnocracyV2 = await ethers.getContractFactory("WarlordTechnocracyV2");
     });
     
@@ -51,21 +51,21 @@ describe.only("warlord technocracy v2", function () {
       );
       await this.combatEngineV2.deployed();
 
-      this.technocracyStorageV2 = await this.TechnocracyStorageV2.deploy(
+      this.storageV2 = await this.StorageV2.deploy(
         this.combatEngineV2.address
       );
-      await this.technocracyStorageV2.deployed();
+      await this.storageV2.deployed();
 
       this.warlordTechnocracyV2 = await this.WarlordTechnocracyV2.deploy(
         this.citadelNFT.address,
         this.pilotNFT.address,
         this.drakma.address,
-        this.technocracyStorageV2.address,
+        this.storageV2.address,
         this.combatEngineV2.address
       );
       await this.warlordTechnocracyV2.deployed();
 
-      this.technocracyStorageV2.updateAccessAddress(this.warlordTechnocracyV2.address);
+      this.storageV2.updateAccessAddress(this.warlordTechnocracyV2.address);
 
       await this.drakma.mintDrakma(this.warlordTechnocracyV2.address, "2400000000000000000000000000");
     });

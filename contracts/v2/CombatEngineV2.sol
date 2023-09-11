@@ -27,11 +27,9 @@ contract CombatEngineV2 is Ownable {
     uint256 drebentraakhtDP = 250;
     uint256 public subgridDistortion = 1;
     uint256 public gridTraversalTime = 30 minutes;
-    int256 sifGattacaPrice = 20000000000000000000;
-    int256 mhrudvogThrotPrice = 40000000000000000000;
-    int256 drebentraakhtPrice = 800000000000000000000;
-
-    uint256 periodFinish = 1735700987; //JAN 1 2025, 2PM PT
+    uint256 sifGattacaPrice = 20000000000000000000;
+    uint256 mhrudvogThrotPrice = 40000000000000000000;
+    uint256 drebentraakhtPrice = 800000000000000000000;
 
     mapping(uint256 => uint256) gridMultiple; // index is _gridId
     
@@ -309,11 +307,11 @@ contract CombatEngineV2 is Ownable {
     }
 
     function calculateTrainingCost(
-        int256 _sifGattaca, 
-        int256 _mhrudvogThrot, 
-        int256 _drebentraakht
-    ) public view returns (int256) {
-        int256 trainingCost = 0;
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) public view returns (uint256) {
+        uint256 trainingCost = 0;
         trainingCost += _sifGattaca * sifGattacaPrice;
         trainingCost += _mhrudvogThrot * mhrudvogThrotPrice;
         trainingCost += _drebentraakht * drebentraakhtPrice;
@@ -322,13 +320,11 @@ contract CombatEngineV2 is Ownable {
     }
 
     function updateGameParams(
-        uint256 _periodFinish, 
         uint256 _baseMiningRatePerHour,
         uint256 _subgridDistortion,
         uint256 _gridTraversalTime
 
     ) external onlyOwner {
-        periodFinish = _periodFinish;
         baseMiningRatePerHour = _baseMiningRatePerHour;
         subgridDistortion = _subgridDistortion;
         gridTraversalTime = _gridTraversalTime;

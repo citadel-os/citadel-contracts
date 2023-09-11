@@ -22,24 +22,24 @@ interface ISTORAGEV2 {
     ) external;
     function trainFleet(
         uint256 _citadelId, 
-        int256 _sifGattaca, 
-        int256 _mhrudvogThrot, 
-        int256 _drebentraakht
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
     ) external;
     function sendRaid(
         uint256 _fromCitadel, 
         uint256 _toCitadel, 
         uint256[] calldata _pilot, 
-        int256[] calldata _fleet
+        uint256[] calldata _fleet
     ) external returns (uint256);
 }
 
 interface ICOMBATENGINE {
     function calculateTrainingCost(
-        int256 _sifGattaca, 
-        int256 _mhrudvogThrot, 
-        int256 _drebentraakht
-    ) external returns (int256);
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) external returns (uint256);
 }
 
 
@@ -122,13 +122,13 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
         }
     }
 
-    function trainFleet(uint256 _citadelId, int256 _sifGattaca, int256 _mhrudvogThrot, int256 _drebentraakht) external nonReentrant {
+    function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
         require(
             citadelCollection.ownerOf(_citadelId) == msg.sender,
             "must own citadel"
         );
-        int256 trainingCost = combatEngine.calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
-        require(drakma.transferFrom(msg.sender, address(this), uint256(trainingCost)));
+        uint256 trainingCost = combatEngine.calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
+        require(drakma.transferFrom(msg.sender, address(this), trainingCost));
         storageEngine.trainFleet(_citadelId, _sifGattaca, _mhrudvogThrot, _drebentraakht);
     }
 
@@ -136,7 +136,7 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
         uint256 _fromCitadel, 
         uint256 _toCitadel, 
         uint256[] calldata _pilot, 
-        int256[] calldata _fleet
+        uint256[] calldata _fleet
     ) external nonReentrant {
         require(_fromCitadel != _toCitadel, "cannot raid own citadel");
         require(
@@ -153,6 +153,4 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
             _fromCitadel
         );
     }
-
-    
 }
