@@ -148,6 +148,10 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
         if (dk > 0) {
             drakma.safeTransfer(msg.sender, dk);
         }
+
+        emit CitadelEvent(
+            _fromCitadel
+        );
     }
 
     

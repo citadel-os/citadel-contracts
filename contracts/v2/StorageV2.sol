@@ -89,10 +89,6 @@ contract StorageV2 is Ownable {
     }
 
     // events
-    event CitadelEvent(
-        uint256 citadelId
-    );
-
     event DispatchRaid(
         uint256 fromCitadelId, 
         uint256 toCitadelId,
@@ -436,10 +432,6 @@ contract StorageV2 is Ownable {
             fleetTracker[5]
         );
         delete raids[_fromCitadel];
-
-        emit CitadelEvent(
-            _fromCitadel
-        );
 
         return (dkToTransfer / 10);
     }
