@@ -30,6 +30,9 @@ contract CombatEngineV2 is Ownable {
     uint256 sifGattacaPrice = 20000000000000000000;
     uint256 mhrudvogThrotPrice = 40000000000000000000;
     uint256 drebentraakhtPrice = 800000000000000000000;
+    uint256 sifGattacaTrainingTime = 5 minutes;
+    uint256 mhrudvogThrotTrainingTime = 15 minutes;
+    uint256 drebentraakhtTrainingTime = 1 hours;
 
     mapping(uint256 => uint256) gridMultiple; // index is _gridId
     
@@ -317,6 +320,58 @@ contract CombatEngineV2 is Ownable {
         trainingCost += _drebentraakht * drebentraakhtPrice;
 
         return trainingCost;
+    }
+
+    function calculateTrainingTime(
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) public view returns (uint256) {
+        uint256 timeTrainingDone = block.timestamp;
+        timeTrainingDone = _sifGattaca * sifGattacaTrainingTime;
+        timeTrainingDone += _mhrudvogThrot * mhrudvogThrotTrainingTime;
+        timeTrainingDone += _drebentraakht * drebentraakhtTrainingTime;
+
+        return timeTrainingDone;
+    }
+
+    function calculateTrainedFleet(
+        uint256[] calldata _fleet,
+        uint256 _timeTrainingStarted,
+        uint256 _timeTrainingDone
+    ) public view returns (uint256, uint256, uint256) {
+        if(_timeTrainingDone <= block.timestamp) {
+            return(
+                _fleet[0], 
+                _fleet[1], 
+                _fleet[2]
+            );
+        }
+
+        uint256 sifGattacaTrained = 0;
+        uint256 mhrudvogThrotTrained = 0;
+        uint256 drebentraakhtTrained = 0;
+        uint256 timeHolder = _timeTrainingStarted;
+
+        sifGattacaTrained = (block.timestamp - timeHolder) / sifGattacaTrainingTime > _fleet[0] 
+            ? _fleet[0]
+            : (block.timestamp - timeHolder) / sifGattacaTrainingTime;
+        
+        if(sifGattacaTrained == _fleet[0]) {
+            timeHolder += (sifGattacaTrainingTime * sifGattacaTrained);
+            mhrudvogThrotTrained = (block.timestamp - timeHolder) / mhrudvogThrotTrainingTime > _fleet[1]
+                ? _fleet[1]
+                : (block.timestamp - timeHolder) / mhrudvogThrotTrainingTime;
+        }
+
+        if(mhrudvogThrotTrained == _fleet[1]) {
+            timeHolder += (mhrudvogThrotTrainingTime * mhrudvogThrotTrained);
+            drebentraakhtTrained = (block.timestamp - timeHolder) / drebentraakhtTrainingTime > _fleet[2]
+                ? _fleet[2]
+                : (block.timestamp - timeHolder) / drebentraakhtTrainingTime;
+        }
+        
+        return (sifGattacaTrained, mhrudvogThrotTrained, drebentraakhtTrained);
     }
 
     function updateGameParams(

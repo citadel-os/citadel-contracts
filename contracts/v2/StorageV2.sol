@@ -41,6 +41,16 @@ interface ICOMBATENGINE {
         uint256 _gridA, 
         uint256 _gridB
     ) external view returns (uint256, uint256);
+    function calculateTrainingTime(
+        uint256 _sifGattaca, 
+        uint256 _mhrudvogThrot, 
+        uint256 _drebentraakht
+    ) external view returns (uint256);
+    function calculateTrainedFleet(
+        uint256[] calldata _fleet,
+        uint256 _timeTrainingStarted,
+        uint256 _timeTrainingDone
+    ) external view returns (uint256, uint256, uint256);
 }
 
 
@@ -118,9 +128,6 @@ contract StorageV2 is Ownable {
     uint256 sifGattacaCary = 10000000000000000000;
     uint256 mhrudvogThrotCary = 2000000000000000000;
     uint256 drebentraakhtCary = 400000000000000000000;
-    uint256 sifGattacaTrainingTime = 5 minutes;
-    uint256 mhrudvogThrotTrainingTime = 15 minutes;
-    uint256 drebentraakhtTrainingTime = 1 hours;
     uint256 raidMaxExpiry = 24 hours;
     uint256 claimInterval = 64 days;
     address accessAddress;
@@ -203,7 +210,7 @@ contract StorageV2 is Ownable {
             "cannot train new fleet until previous has finished"
         );
 
-        uint256 timeTrainingDone = calculateTrainingTime(_sifGattaca, _mhrudvogThrot, _drebentraakht);
+        uint256 timeTrainingDone = combatEngine.calculateTrainingTime(_sifGattaca, _mhrudvogThrot, _drebentraakht);
 
 
         // allocate 100 sifGattaca on first train
@@ -464,69 +471,26 @@ contract StorageV2 is Ownable {
     function getTrainedFleet(uint256 _citadelId) public view returns (
         uint256, uint256, uint256
     ) {
-        uint256 sifGattaca = fleet[_citadelId].stationedFleet.sifGattaca;
-        uint256 mhrudvogThrot = fleet[_citadelId].stationedFleet.mhrudvogThrot;
-        uint256 drebentraakht = fleet[_citadelId].stationedFleet.drebentraakht;
+        uint256[] memory fleetArr;
+        fleetArr[0] = fleet[_citadelId].stationedFleet.sifGattaca;
+        fleetArr[1] = fleet[_citadelId].stationedFleet.mhrudvogThrot;
+        fleetArr[2] = fleet[_citadelId].stationedFleet.drebentraakht;
 
         (
             uint256 trainedSifGattaca, 
             uint256 trainedMhrudvogThrot, 
             uint256 trainedDrebentraakht
-        ) = calculateTrainedFleet(_citadelId);
+        ) = combatEngine.calculateTrainedFleet(
+            fleetArr, 
+            fleet[_citadelId].trainingStarted, 
+            fleet[_citadelId].trainingDone
+        );
 
         return (
-            sifGattaca + trainedSifGattaca, 
-            mhrudvogThrot + trainedMhrudvogThrot, 
-            drebentraakht + trainedDrebentraakht
+            fleetArr[0] + trainedSifGattaca, 
+            fleetArr[1] + trainedMhrudvogThrot, 
+            fleetArr[2] + trainedDrebentraakht
         );
-    }
-
-    function calculateTrainedFleet(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
-        if(fleet[_citadelId].trainingDone <= block.timestamp) {
-            return(
-                fleet[_citadelId].trainingFleet.sifGattaca, 
-                fleet[_citadelId].trainingFleet.mhrudvogThrot, 
-                fleet[_citadelId].trainingFleet.drebentraakht
-            );
-        }
-
-        uint256 sifGattacaTrained = 0;
-        uint256 mhrudvogThrotTrained = 0;
-        uint256 drebentraakhtTrained = 0;
-        uint256 timeHolder = fleet[_citadelId].trainingStarted;
-
-        sifGattacaTrained = (block.timestamp - timeHolder) / sifGattacaTrainingTime > fleet[_citadelId].trainingFleet.sifGattaca 
-            ? fleet[_citadelId].trainingFleet.sifGattaca 
-            : (block.timestamp - timeHolder) / sifGattacaTrainingTime;
-        
-        if(sifGattacaTrained == fleet[_citadelId].trainingFleet.sifGattaca) {
-            timeHolder += (sifGattacaTrainingTime * sifGattacaTrained);
-            mhrudvogThrotTrained = (block.timestamp - timeHolder) / mhrudvogThrotTrainingTime > fleet[_citadelId].trainingFleet.mhrudvogThrot
-                ? fleet[_citadelId].trainingFleet.mhrudvogThrot 
-                : (block.timestamp - timeHolder) / mhrudvogThrotTrainingTime;
-        }
-
-        if(mhrudvogThrotTrained == fleet[_citadelId].trainingFleet.mhrudvogThrot) {
-            timeHolder += (mhrudvogThrotTrainingTime * mhrudvogThrotTrained);
-            drebentraakhtTrained = (block.timestamp - timeHolder) / drebentraakhtTrainingTime > fleet[_citadelId].trainingFleet.drebentraakht
-                ? fleet[_citadelId].trainingFleet.drebentraakht
-                : (block.timestamp - timeHolder) / drebentraakhtTrainingTime;
-        }
-        
-        return (sifGattacaTrained, mhrudvogThrotTrained, drebentraakhtTrained);
-    }
-
-    function calculateTrainingTime(
-        uint256 _sifGattaca, 
-        uint256 _mhrudvogThrot, 
-        uint256 _drebentraakht
-    ) public view returns (uint256) {
-        uint256 timeTrainingDone = block.timestamp;
-        timeTrainingDone = _sifGattaca * sifGattacaTrainingTime;
-        timeTrainingDone += _mhrudvogThrot * mhrudvogThrotTrainingTime;
-        timeTrainingDone += _drebentraakht * drebentraakhtTrainingTime;
-
-        return timeTrainingDone;
     }
 
     function getMiningStartTime(uint256 _citadelId) internal view returns(uint256) {
