@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface ISTORAGEV2 {
     function liteGrid(
+        uint256 _citadelId,
         uint256[] calldata _pilotIds, 
         uint256 _gridId, 
         uint8 _factionId
@@ -26,7 +27,7 @@ interface ISTORAGEV2 {
         uint256 _mhrudvogThrot, 
         uint256 _drebentraakht
     ) external;
-    function sendRaid(
+    function sendSiege(
         uint256 _fromCitadel, 
         uint256 _toCitadel, 
         uint256[] calldata _pilot, 
@@ -48,7 +49,7 @@ interface ICOMBATENGINE {
 }
 
 
-contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
+contract CitadelGameV2 is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // imports
@@ -67,20 +68,6 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
         uint256 citadelId
     );
 
-    event DispatchRaid(
-        uint256 fromCitadelId, 
-        uint256 toCitadelId,
-        uint256 timeRaidHit,
-        uint256 offensiveCarryCapacity,
-        uint256 drakmaRaided,
-        uint256 offensiveSifGattacaDestroyed,
-        uint256 offensiveMhrudvogThrotDestroyed,
-        uint256 offensiveDrebentraakhtDestroyed,
-        uint256 defensiveSifGattacaDestroyed,
-        uint256 defensiveMhrudvogThrotDestroyed,
-        uint256 defensiveDrebentraakhtDestroyed
-    );
-
     constructor(
         IERC721 _citadelCollection, 
         IERC721 _pilotCollection, 
@@ -95,7 +82,7 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
         combatEngine = _combatEngine;
     }
 
-    function liteGrid(uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) external nonReentrant {
+    function liteGrid(uint256 _citadelId, uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) external nonReentrant {
         require(_gridId <= maxGrid && _gridId != 0, "invalid grid");
         require(_factionId <= maxFaction, "invalid faction");
         for (uint256 i; i < _pilotIds.length; ++i) {
@@ -104,7 +91,7 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
                 "must own pilot to lite"
             );
         }
-        storageEngine.liteGrid(_pilotIds, _gridId, _factionId);
+        storageEngine.liteGrid(_citadelId, _pilotIds, _gridId, _factionId);
     }
 
     function dimGrid(uint256 _citadelId, uint256 _pilotId) external nonReentrant {
@@ -137,19 +124,19 @@ contract WarlordTechnocracyV2 is Ownable, ReentrancyGuard {
         storageEngine.trainFleet(_citadelId, _sifGattaca, _mhrudvogThrot, _drebentraakht);
     }
 
-    function sendRaid(
+    function sendSiege(
         uint256 _fromCitadel, 
         uint256 _toCitadel, 
         uint256[] calldata _pilot, 
         uint256[] calldata _fleet
     ) external nonReentrant {
-        require(_fromCitadel != _toCitadel, "cannot raid own citadel");
+        require(_fromCitadel != _toCitadel, "cannot siege own citadel");
         require(
             citadelCollection.ownerOf(_fromCitadel) == msg.sender,
             "must own citadel"
         );
 
-        uint256 dk = storageEngine.sendRaid(_fromCitadel, _toCitadel, _pilot, _fleet);
+        uint256 dk = storageEngine.sendSiege(_fromCitadel, _toCitadel, _pilot, _fleet);
         if (dk > 0) {
             drakma.safeTransfer(msg.sender, dk);
         }

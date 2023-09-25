@@ -41,15 +41,15 @@ contract CombatEngineV2 is Ownable {
     }
 
     function combatOP(
-        uint256[] memory _pilotIds, 
+        uint256 _pilotId, 
         uint256 _sifGattaca, 
         uint256 _mhrudvogThrot, 
         uint256 _drebentraakht
     ) public view returns (uint256) {
         uint256 multiple = 0;
 
-        for (uint256 i; i < _pilotIds.length; ++i) {
-            (,uint8 level) = pilotCollection.getOnchainPILOT(_pilotIds[i]);
+        if (_pilotId != 0) {
+            (,uint8 level) = pilotCollection.getOnchainPILOT(_pilotId);
             multiple += pilotMultiple + (level * levelMultiple);
         }
 
@@ -109,10 +109,10 @@ contract CombatEngineV2 is Ownable {
         [6] uint256 _defensiveDrebentraakht
     */
     function calculateDestroyedFleet(            
-        uint256[] memory _offensivePilotIds,
+        uint256 _offensivePilotIds,
         uint256[] memory _defensivePilotIds,
         uint256[7] memory _fleetTracker 
-    ) public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
+    ) public view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
         uint256 op = combatOP(
             _offensivePilotIds, 
             _fleetTracker[0], 
@@ -156,13 +156,19 @@ contract CombatEngineV2 is Ownable {
             _fleetTracker[6] * op * 50
         ) / ((op + dp) * 100);
 
+        //offensive win ratio, reuse fleetTracker[3]
+        _fleetTracker[3] = (
+            op
+        ) / ((op + dp) * 100);
+
         return (
             _fleetTracker[0],
             _fleetTracker[1],
             _fleetTracker[2],
             _fleetTracker[4],
             _fleetTracker[5],
-            _fleetTracker[6]
+            _fleetTracker[6],
+            _fleetTracker[3]
         );
     }
 
@@ -222,7 +228,11 @@ contract CombatEngineV2 is Ownable {
         }
     }
 
-    function calculateUniqueBonus(uint8 weapon, uint8 engine, uint8 shield) internal view returns (uint256, uint256) {
+    function calculateUniqueBonus(
+        uint8 weapon, 
+        uint8 engine, 
+        uint8 shield
+    ) internal view returns (uint256, uint256) {
         uint256 swarmMultiple = 0;
         uint256 siegeMultiple = 0;
         if (weapon == 0) {

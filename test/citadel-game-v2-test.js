@@ -10,7 +10,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 chai.use(solidity);
 
-describe.only("warlord technocracy v2", function () {
+describe.only("citadel game v2", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
@@ -19,7 +19,7 @@ describe.only("warlord technocracy v2", function () {
         this.CitadelExordium = await ethers.getContractFactory("CitadelExordium");
         this.CombatEngineV2 = await ethers.getContractFactory("CombatEngineV2");
         this.StorageV2 = await ethers.getContractFactory("StorageV2");
-        this.WarlordTechnocracyV2 = await ethers.getContractFactory("WarlordTechnocracyV2");
+        this.CitadelGameV2 = await ethers.getContractFactory("CitadelGameV2");
     });
     
     beforeEach(async function () {
@@ -56,18 +56,18 @@ describe.only("warlord technocracy v2", function () {
       );
       await this.storageV2.deployed();
 
-      this.warlordTechnocracyV2 = await this.WarlordTechnocracyV2.deploy(
+      this.citadelGameV2 = await this.CitadelGameV2.deploy(
         this.citadelNFT.address,
         this.pilotNFT.address,
         this.drakma.address,
         this.storageV2.address,
         this.combatEngineV2.address
       );
-      await this.warlordTechnocracyV2.deployed();
+      await this.citadelGameV2.deployed();
 
-      this.storageV2.updateAccessAddress(this.warlordTechnocracyV2.address);
+      this.storageV2.updateAccessAddress(this.citadelGameV2.address);
 
-      await this.drakma.mintDrakma(this.warlordTechnocracyV2.address, "2400000000000000000000000000");
+      await this.drakma.mintDrakma(this.citadelGameV2.address, "2400000000000000000000000000");
     });
     
     describe("lite to grid", function () {
@@ -81,7 +81,7 @@ describe.only("warlord technocracy v2", function () {
       it("lites 2 pilot to grid", async function () {
         [owner, addr1] = await ethers.getSigners();
 
-        await this.warlordTechnocracyV2.liteGrid([1,2], 512, 1);
+        await this.citadelGameV2.liteGrid(2, [1,2], 512, 1);
         
       });
 
