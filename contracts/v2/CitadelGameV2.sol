@@ -48,6 +48,12 @@ interface ICOMBATENGINE {
     ) external returns (uint256);
 }
 
+interface IPROPAGANDA {
+    function dispatchCitadelEvent(
+        uint256 _citadelId
+    ) external view;
+}
+
 
 contract CitadelGameV2 is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -58,28 +64,26 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     IERC721 public immutable pilotCollection;
     ISTORAGEV2 public immutable storageEngine;
     ICOMBATENGINE public immutable combatEngine;
+    IPROPAGANDA public immutable propaganda;
 
     // variables
     uint256 maxGrid = 1023;
     uint8 maxFaction = 4;
-
-    // events
-    event CitadelEvent(
-        uint256 citadelId
-    );
 
     constructor(
         IERC721 _citadelCollection, 
         IERC721 _pilotCollection, 
         IERC20 _drakma, 
         ISTORAGEV2 _storageEngine,
-        ICOMBATENGINE _combatEngine
+        ICOMBATENGINE _combatEngine,
+        IPROPAGANDA _propaganda
     ) {
         citadelCollection = _citadelCollection;
         pilotCollection = _pilotCollection;
         drakma = _drakma;
         storageEngine = _storageEngine;
         combatEngine = _combatEngine;
+        propaganda = _propaganda;
     }
 
     function liteGrid(uint256 _citadelId, uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) external nonReentrant {
@@ -141,9 +145,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             drakma.safeTransfer(msg.sender, dk);
         }
 
-        emit CitadelEvent(
-            _fromCitadel
-        );
+        propaganda.dispatchCitadelEvent(_fromCitadel);
     }
 
     function sendReinforcements(
@@ -158,12 +160,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
 
         storageEngine.sendReinforcements(_fromCitadel, _toCitadel, _fleet);
 
-        emit CitadelEvent(
-            _fromCitadel
-        );
-
-        emit CitadelEvent(
-            _toCitadel
-        );
+        propaganda.dispatchCitadelEvent(_fromCitadel);
+        propaganda.dispatchCitadelEvent(_toCitadel);
     }
 }

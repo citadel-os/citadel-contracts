@@ -53,12 +53,29 @@ interface ICOMBATENGINE {
     ) external view returns (uint256, uint256, uint256);
 }
 
+interface IPROPAGANDA {
+    function dispatchSiegeEvent(
+        uint256 _fromCitadelId, 
+        uint256 _toCitadelId, 
+        uint256 _timeSiegeHit, 
+        uint256 _offensiveCarryCapacity, 
+        uint256 _drakmaSieged, 
+        uint256 _offensiveSifGattacaDestroyed, 
+        uint256 _offensiveMhrudvogThrotDestroyed, 
+        uint256 _offensiveDrebentraakhtDestroyed, 
+        uint256 _defensiveSifGattacaDestroyed, 
+        uint256 _defensiveMhrudvogThrotDestroyed, 
+        uint256 _defensiveDrebentraakhtDestroyed
+    ) external view;
+}
+
 
 contract StorageV2 is Ownable {
     using SafeERC20 for IERC20;
 
     // imports
     ICOMBATENGINE public immutable combatEngine;
+    IPROPAGANDA public immutable propaganda;
 
     // data structures
     struct CitadelGrid {
@@ -99,20 +116,12 @@ contract StorageV2 is Ownable {
         uint256 timeSiegeHits;
     }
 
-    // events
-    event DispatchSiege(
-        uint256 fromCitadelId, 
-        uint256 toCitadelId,
-        uint256 timeSiegeHit,
-        uint256 offensiveCarryCapacity,
-        uint256 drakmaSieged,
-        uint256 offensiveSifGattacaDestroyed,
-        uint256 offensiveMhrudvogThrotDestroyed,
-        uint256 offensiveDrebentraakhtDestroyed,
-        uint256 defensiveSifGattacaDestroyed,
-        uint256 defensiveMhrudvogThrotDestroyed,
-        uint256 defensiveDrebentraakhtDestroyed
-    );
+    struct Grid {
+        bool isCapital;
+        bool isSovereign;
+        bool isLit;
+        uint256 citadelId;
+    }
 
     // mappings
     mapping(uint256 => CitadelGrid) citadel; // index is _citadelId
@@ -122,7 +131,7 @@ contract StorageV2 is Ownable {
     mapping(uint256 => FleetReinforce) reinforcements; // index is _fromCitadelId
     mapping(uint256 => bool) pilot; // index is _pilotId
 
-    mapping(uint256 => uint256) grid;
+    mapping(uint256 => Grid) grid;
 
     //variables
     uint256 gameStart;
@@ -135,17 +144,18 @@ contract StorageV2 is Ownable {
 
 
     constructor(
-        ICOMBATENGINE _combatEngine
+        ICOMBATENGINE _combatEngine,
+        IPROPAGANDA _propaganda
     ) {
         combatEngine = _combatEngine;
+        propaganda = _propaganda;
         gameStart = block.timestamp;
     }
 
     // public functions
     function liteGrid(uint256 _citadelId, uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) public {
         require(msg.sender == accessAddress, "cannot call function directly");
-        require(grid[_gridId] == 0, "grid already lit");
-
+        require(grid[_gridId].isLit, "grid already lit");
 
         for (uint256 i; i < _pilotIds.length; ++i) {
             require(!pilot[_pilotIds[i]], "pilot already lit");
@@ -163,6 +173,7 @@ contract StorageV2 is Ownable {
             citadel[_citadelId].timeLit = block.timestamp;
             citadel[_citadelId].factionId = _factionId;
         }
+        grid[_gridId].isLit = true;
     }
 
     function usurpCitadel(uint256 _fromCitadel, uint256 _toCitadel) internal {
@@ -175,25 +186,23 @@ contract StorageV2 is Ownable {
     }
 
     function swapGridSafe(uint256 _fromGrid, uint256 _toGrid) internal {
-        require(grid[_toGrid] == 0, "cannot usurp lit grid");
+        require(grid[_toGrid].isLit, "cannot usurp lit grid");
         swapGrid(_fromGrid, _toGrid);
     }
 
     function swapGrid(uint256 _fromGrid, uint256 _toGrid) internal {
-        uint256 fromCitadelId = getGrid(_fromGrid);
-        uint256 toCitadelId = getGrid(_toGrid);
-        grid[_fromGrid] = grid[_toGrid];
-        grid[_toGrid] = fromCitadelId;
-
+        uint256 fromCitadelId;
+        uint256 toCitadelId;
+        (fromCitadelId,,,) = getGrid(_fromGrid);
+        (toCitadelId,,,) = getGrid(_toGrid);
+        grid[_fromGrid].citadelId = toCitadelId;
+        grid[_toGrid].citadelId = fromCitadelId;
         citadel[fromCitadelId].gridId = _toGrid;
         citadel[toCitadelId].gridId = _fromGrid;
     }
 
-    function getGrid(uint256 _gridId) internal view returns (uint256) {
-        if(grid[_gridId] == 0) {
-            return _gridId;
-        }
-        return grid[_gridId];
+    function getGrid(uint256 _gridId) internal view returns (uint256, bool, bool, bool) {
+        return (grid[_gridId].citadelId, grid[_gridId].isCapital, grid[_gridId].isSovereign, grid[_gridId].isLit);
     }
 
     function getGridFromCitadel(uint256 _citadelId) internal view returns (uint256) {
@@ -218,6 +227,8 @@ contract StorageV2 is Ownable {
             citadel[_citadelId].timeOfLastClaim = 0;
             citadel[_citadelId].timeLit = 0;
         }
+        uint256 gridId = getGridFromCitadel(_citadelId);
+        grid[gridId].isLit = false;
     }
 
     function claim(uint256 _citadelId) public returns (uint256) {
@@ -471,8 +482,10 @@ contract StorageV2 is Ownable {
         citadel[toCitadel].unclaimedDrakma = (drakmaAvailable - dkToTransfer);
         citadel[_fromCitadel].unclaimedDrakma += (dkToTransfer * 9) / 10;
         citadel[toCitadel].timeLastSieged = block.timestamp;
+        
+        delete siege[_fromCitadel];
 
-        emit DispatchSiege(
+        propaganda.dispatchSiegeEvent(
             _fromCitadel,
             toCitadel,
             siege[_fromCitadel].timeSiegeHits,
@@ -485,7 +498,6 @@ contract StorageV2 is Ownable {
             fleetTracker[4],
             fleetTracker[5]
         );
-        delete siege[_fromCitadel];
 
         return (dkToTransfer / 10);
     }
