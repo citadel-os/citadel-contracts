@@ -123,13 +123,18 @@ contract StorageV2 is Ownable {
         uint256 citadelId;
     }
 
+    struct Pilot {
+        bool isSovereign;
+        bool isLit;
+    }
+
     // mappings
     mapping(uint256 => CitadelGrid) citadel; // index is _citadelId
     mapping(uint256 => FleetAcademy) fleet; // index is _citadelId
 
     mapping(uint256 => Siege) siege; // index is _fromCitadelId
     mapping(uint256 => FleetReinforce) reinforcements; // index is _fromCitadelId
-    mapping(uint256 => bool) pilot; // index is _pilotId
+    mapping(uint256 => Pilot) pilot; // index is _pilotId
 
     mapping(uint256 => Grid) grid;
 
@@ -150,17 +155,35 @@ contract StorageV2 is Ownable {
         combatEngine = _combatEngine;
         propaganda = _propaganda;
         gameStart = block.timestamp;
+        
+        // init capital cities
+        grid[495] = Grid(true, false, true, 63); //ANNEXATION CAPITAL
+        grid[661] = Grid(true, false, true, 62); //SANCTION CAPITAL
+        grid[303] = Grid(true, false, true, 61); //NETWORK STATE CAPITAL
+        grid[495] = Grid(true, false, true, 60); //ANNEXATION CAPITAL
+
+        // init sovereign collective
+        pilot[63] = Pilot(true, false);
+        pilot[62] = Pilot(true, false);
+        pilot[61] = Pilot(true, false);
+        pilot[60] = Pilot(true, false);
     }
 
     // public functions
     function liteGrid(uint256 _citadelId, uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) public {
         require(msg.sender == accessAddress, "cannot call function directly");
         require(grid[_gridId].isLit, "grid already lit");
+        require(grid[_gridId].isCapital, "may only take capital by force");
+        require(citadel[_citadelId].gridId == 0, "citadel already lit");
 
+        bool isSovereign = false;
         for (uint256 i; i < _pilotIds.length; ++i) {
-            require(!pilot[_pilotIds[i]], "pilot already lit");
+            require(!pilot[_pilotIds[i]].isLit, "pilot already lit");
             citadel[_citadelId].pilot.push(_pilotIds[i]);
-            pilot[_pilotIds[i]] = true;
+            if(pilot[i].isSovereign) {
+                isSovereign = true;
+            }
+            pilot[_pilotIds[i]].isLit = true;
         }
 
         uint256 fromGridId = _citadelId;
@@ -173,7 +196,8 @@ contract StorageV2 is Ownable {
             citadel[_citadelId].timeLit = block.timestamp;
             citadel[_citadelId].factionId = _factionId;
         }
-        grid[_gridId].isLit = true;
+
+        grid[_gridId] = Grid(false, isSovereign, true, _citadelId);
     }
 
     function usurpCitadel(uint256 _fromCitadel, uint256 _toCitadel) internal {
@@ -214,20 +238,22 @@ contract StorageV2 is Ownable {
 
     function dimGrid(uint256 _citadelId, uint256 _pilotId) public {
         require(msg.sender == accessAddress, "cannot call function directly");
+        uint256 gridId = getGridFromCitadel(_citadelId);
+        require(!grid[gridId].isCapital, "cannot dim capital");
         for (uint256 i; i < citadel[_citadelId].pilot.length; ++i) {
             if (citadel[_citadelId].pilot[i] == _pilotId) {
                 removePilot(i, _citadelId);
                 break;
             }
         }
-        pilot[_pilotId] = false;
+        pilot[_pilotId].isLit = false;
+        pilot[_pilotId].isSovereign = false;
 
         if (citadel[_citadelId].pilot.length == 0) {
             citadel[_citadelId].factionId = 0;
             citadel[_citadelId].timeOfLastClaim = 0;
             citadel[_citadelId].timeLit = 0;
         }
-        uint256 gridId = getGridFromCitadel(_citadelId);
         grid[gridId].isLit = false;
     }
 
