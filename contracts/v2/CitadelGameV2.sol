@@ -12,7 +12,8 @@ interface ISTORAGEV2 {
         uint256 _citadelId,
         uint256[] calldata _pilotIds, 
         uint256 _gridId, 
-        uint8 _factionId
+        uint8 _factionId,
+        bool _isSovereign
     ) external;
     function claim(
         uint256 _citadelId
@@ -54,6 +55,11 @@ interface IPROPAGANDA {
     ) external view;
 }
 
+interface ISOVEREIGN {
+    function initializeSovereign(uint256 _sovereignId, uint256 _capitalId) external;
+    function isSovereignOnLite(uint256 _sovereignId) external view returns (bool isSovereign);
+}
+
 
 contract CitadelGameV2 is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -65,6 +71,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     ISTORAGEV2 public immutable storageEngine;
     ICOMBATENGINE public immutable combatEngine;
     IPROPAGANDA public immutable propaganda;
+    ISOVEREIGN public immutable sovereignCollective;
 
     // variables
     uint256 maxGrid = 1023;
@@ -76,7 +83,8 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         IERC20 _drakma, 
         ISTORAGEV2 _storageEngine,
         ICOMBATENGINE _combatEngine,
-        IPROPAGANDA _propaganda
+        IPROPAGANDA _propaganda,
+        ISOVEREIGN _sovereignCollective
     ) {
         citadelCollection = _citadelCollection;
         pilotCollection = _pilotCollection;
@@ -84,18 +92,29 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         storageEngine = _storageEngine;
         combatEngine = _combatEngine;
         propaganda = _propaganda;
+        sovereignCollective = _sovereignCollective;
     }
 
-    function liteGrid(uint256 _citadelId, uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) external nonReentrant {
+    function liteGrid(
+        uint256 _citadelId, 
+        uint256[] calldata _pilotIds, 
+        uint256 _gridId, 
+        uint8 _factionId
+    ) external nonReentrant {
         require(_gridId <= maxGrid && _gridId != 0, "invalid grid");
         require(_factionId <= maxFaction, "invalid faction");
+        bool isSovereign = false;
         for (uint256 i; i < _pilotIds.length; ++i) {
             require(
                 pilotCollection.ownerOf(_pilotIds[i]) == msg.sender,
                 "must own pilot to lite"
             );
+            if (sovereignCollective.isSovereignOnLite(_pilotIds[i])) {
+                isSovereign = true;
+                sovereignCollective.initializeSovereign(_pilotIds[i], _factionId);
+            }
         }
-        storageEngine.liteGrid(_citadelId, _pilotIds, _gridId, _factionId);
+        storageEngine.liteGrid(_citadelId, _pilotIds, _gridId, _factionId, isSovereign);
     }
 
     function dimGrid(uint256 _citadelId, uint256 _pilotId) external nonReentrant {

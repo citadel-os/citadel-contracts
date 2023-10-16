@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -51,6 +50,7 @@ interface ICOMBATENGINE {
         uint256 _timeTrainingStarted,
         uint256 _timeTrainingDone
     ) external view returns (uint256, uint256, uint256);
+    function isTreasuryMaxed(uint256 treasuryBal) external view returns (bool);
 }
 
 interface IPROPAGANDA {
@@ -71,7 +71,6 @@ interface IPROPAGANDA {
 
 
 contract StorageV2 is Ownable {
-    using SafeERC20 for IERC20;
 
     // imports
     ICOMBATENGINE public immutable combatEngine;
@@ -123,20 +122,19 @@ contract StorageV2 is Ownable {
         uint256 citadelId;
     }
 
-    struct Pilot {
-        bool isSovereign;
-        bool isLit;
+    struct Capital {
+        uint256 gridId;
+        uint256 treasury;
     }
 
     // mappings
     mapping(uint256 => CitadelGrid) citadel; // index is _citadelId
     mapping(uint256 => FleetAcademy) fleet; // index is _citadelId
-
     mapping(uint256 => Siege) siege; // index is _fromCitadelId
     mapping(uint256 => FleetReinforce) reinforcements; // index is _fromCitadelId
-    mapping(uint256 => Pilot) pilot; // index is _pilotId
-
+    mapping(uint256 => bool) pilot; // index is _pilotId, value isLit
     mapping(uint256 => Grid) grid;
+    mapping(uint256 => Capital) capital;
 
     //variables
     uint256 gameStart;
@@ -157,33 +155,35 @@ contract StorageV2 is Ownable {
         gameStart = block.timestamp;
         
         // init capital cities
-        grid[495] = Grid(true, false, true, 63); //ANNEXATION CAPITAL
-        grid[661] = Grid(true, false, true, 62); //SANCTION CAPITAL
-        grid[303] = Grid(true, false, true, 61); //NETWORK STATE CAPITAL
-        grid[495] = Grid(true, false, true, 60); //ANNEXATION CAPITAL
+        grid[495] = Grid(true, false, true, 63); //ANNEXATION
+        grid[661] = Grid(true, false, true, 62); //AUTONOMOUS ZONE
+        grid[303] = Grid(true, false, true, 61); //SANCTION
+        grid[495] = Grid(true, false, true, 60); //NETWORK STATE
 
-        // init sovereign collective
-        pilot[63] = Pilot(true, false);
-        pilot[62] = Pilot(true, false);
-        pilot[61] = Pilot(true, false);
-        pilot[60] = Pilot(true, false);
+        capital[0] = Capital(495, 0); //ANNEXATION CAPITAL TREASURY
+        capital[1] = Capital(615, 0); //AUTONOMOUS ZONE CAPITAL TREASURY
+        capital[2] = Capital(661, 0); //SANCTION CAPITAL TREASURY
+        capital[3] = Capital(303, 0); //NETWORK STATE CAPITAL TREASURY
+
     }
 
     // public functions
-    function liteGrid(uint256 _citadelId, uint256[] calldata _pilotIds, uint256 _gridId, uint8 _factionId) public {
+    function liteGrid(
+        uint256 _citadelId, 
+        uint256[] calldata _pilotIds, 
+        uint256 _gridId, 
+        uint8 _factionId,
+        bool _isSovereign
+    ) public {
         require(msg.sender == accessAddress, "cannot call function directly");
         require(grid[_gridId].isLit, "grid already lit");
         require(grid[_gridId].isCapital, "may only take capital by force");
         require(citadel[_citadelId].gridId == 0, "citadel already lit");
 
-        bool isSovereign = false;
         for (uint256 i; i < _pilotIds.length; ++i) {
-            require(!pilot[_pilotIds[i]].isLit, "pilot already lit");
+            require(!pilot[_pilotIds[i]], "pilot already lit");
             citadel[_citadelId].pilot.push(_pilotIds[i]);
-            if(pilot[i].isSovereign) {
-                isSovereign = true;
-            }
-            pilot[_pilotIds[i]].isLit = true;
+            pilot[_pilotIds[i]] = true;
         }
 
         uint256 fromGridId = _citadelId;
@@ -197,7 +197,7 @@ contract StorageV2 is Ownable {
             citadel[_citadelId].factionId = _factionId;
         }
 
-        grid[_gridId] = Grid(false, isSovereign, true, _citadelId);
+        grid[_gridId] = Grid(false, _isSovereign, true, _citadelId);
     }
 
     function usurpCitadel(uint256 _fromCitadel, uint256 _toCitadel) internal {
@@ -246,8 +246,7 @@ contract StorageV2 is Ownable {
                 break;
             }
         }
-        pilot[_pilotId].isLit = false;
-        pilot[_pilotId].isSovereign = false;
+        pilot[_pilotId] = false;
 
         if (citadel[_citadelId].pilot.length == 0) {
             citadel[_citadelId].factionId = 0;
@@ -281,7 +280,10 @@ contract StorageV2 is Ownable {
         
         citadel[_citadelId].timeOfLastClaim = block.timestamp;
         citadel[_citadelId].unclaimedDrakma = 0;
-        return drakmaToClaim;
+        if (!combatEngine.isTreasuryMaxed(capital[citadel[_citadelId].factionId].treasury)) {
+            capital[citadel[_citadelId].factionId].treasury += (drakmaToClaim / 10);
+        }
+        return (drakmaToClaim * 9) / 10;
     }
 
     function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) public {
