@@ -12,8 +12,8 @@ interface ISTORAGEV2 {
         uint256 _citadelId,
         uint256[] calldata _pilotIds, 
         uint256 _gridId, 
-        uint8 _factionId,
-        bool _isSovereign
+        uint8 _capitalId,
+        uint256 sovereignUntil
     ) external;
     function claim(
         uint256 _citadelId
@@ -39,6 +39,8 @@ interface ISTORAGEV2 {
         uint256 _toCitadel,
         uint256[] calldata _fleet
     ) external;
+    function bribeCapital(uint256 _citadelId, uint8 _capitalId) external returns (uint256);
+    function getCapital(uint8 _capitalId) external view returns (uint256, uint256, uint256);
 }
 
 interface ICOMBATENGINE {
@@ -57,7 +59,8 @@ interface IPROPAGANDA {
 
 interface ISOVEREIGN {
     function initializeSovereign(uint256 _sovereignId, uint256 _capitalId) external;
-    function isSovereignOnLite(uint256 _sovereignId) external view returns (bool isSovereign);
+    function isSovereignOnLite(uint256 _sovereignId) external view returns (uint256 sovereignUntil);
+    function bribeCapital(uint256 _sovereignId, uint256 _capitalId) external;
 }
 
 
@@ -99,22 +102,22 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         uint256 _citadelId, 
         uint256[] calldata _pilotIds, 
         uint256 _gridId, 
-        uint8 _factionId
+        uint8 _capitalId
     ) external nonReentrant {
         require(_gridId <= maxGrid && _gridId != 0, "invalid grid");
-        require(_factionId <= maxFaction, "invalid faction");
-        bool isSovereign = false;
+        require(_capitalId <= maxFaction, "invalid capital");
+        uint256 sovereignUntil;
         for (uint256 i; i < _pilotIds.length; ++i) {
             require(
                 pilotCollection.ownerOf(_pilotIds[i]) == msg.sender,
                 "must own pilot to lite"
             );
-            if (sovereignCollective.isSovereignOnLite(_pilotIds[i])) {
-                isSovereign = true;
-                sovereignCollective.initializeSovereign(_pilotIds[i], _factionId);
+            if (sovereignCollective.isSovereignOnLite(_pilotIds[i]) > block.timestamp) {
+                sovereignUntil = block.timestamp + 64 days;
+                sovereignCollective.initializeSovereign(_pilotIds[i], _capitalId);
             }
         }
-        storageEngine.liteGrid(_citadelId, _pilotIds, _gridId, _factionId, isSovereign);
+        storageEngine.liteGrid(_citadelId, _pilotIds, _gridId, _capitalId, sovereignUntil);
     }
 
     function dimGrid(uint256 _citadelId, uint256 _pilotId) external nonReentrant {
@@ -181,5 +184,24 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
 
         propaganda.dispatchCitadelEvent(_fromCitadel);
         propaganda.dispatchCitadelEvent(_toCitadel);
+    }
+
+    function bribeCapital(
+        uint256 _sovereignId,
+        uint8 _capitalId,
+        uint256 _citadelId
+    ) external nonReentrant {
+        require(
+            pilotCollection.ownerOf(_sovereignId) == msg.sender,
+            "must own sovereign"
+        );
+        require(
+            citadelCollection.ownerOf(_citadelId) == msg.sender,
+            "must own citadel"
+        );
+
+        uint256 bribeAmt = storageEngine.bribeCapital(_citadelId, _capitalId);
+        require(drakma.transferFrom(msg.sender, address(this), bribeAmt));
+        sovereignCollective.bribeCapital(_sovereignId, _capitalId);
     }
 }

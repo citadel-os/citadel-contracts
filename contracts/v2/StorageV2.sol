@@ -79,7 +79,7 @@ contract StorageV2 is Ownable {
     // data structures
     struct CitadelGrid {
         uint256 gridId;
-        uint8 factionId;
+        uint8 capitalId;
         uint256 timeOfLastClaim;
         uint256 timeLit;
         uint256 timeLastSieged;
@@ -117,7 +117,7 @@ contract StorageV2 is Ownable {
 
     struct Grid {
         bool isCapital;
-        bool isSovereign;
+        uint256 sovereignUntil;
         bool isLit;
         uint256 citadelId;
     }
@@ -125,6 +125,8 @@ contract StorageV2 is Ownable {
     struct Capital {
         uint256 gridId;
         uint256 treasury;
+        uint256 bribeAmt;
+        string name;
     }
 
     // mappings
@@ -134,7 +136,7 @@ contract StorageV2 is Ownable {
     mapping(uint256 => FleetReinforce) reinforcements; // index is _fromCitadelId
     mapping(uint256 => bool) pilot; // index is _pilotId, value isLit
     mapping(uint256 => Grid) grid;
-    mapping(uint256 => Capital) capital;
+    mapping(uint8 => Capital) capital;
 
     //variables
     uint256 gameStart;
@@ -155,15 +157,15 @@ contract StorageV2 is Ownable {
         gameStart = block.timestamp;
         
         // init capital cities
-        grid[495] = Grid(true, false, true, 63); //ANNEXATION
-        grid[661] = Grid(true, false, true, 62); //AUTONOMOUS ZONE
-        grid[303] = Grid(true, false, true, 61); //SANCTION
-        grid[495] = Grid(true, false, true, 60); //NETWORK STATE
+        grid[495] = Grid(true, 0, true, 63); //ANNEXATION
+        grid[661] = Grid(true, 0, true, 62); //AUTONOMOUS ZONE
+        grid[303] = Grid(true, 0, true, 61); //SANCTION
+        grid[495] = Grid(true, 0, true, 60); //NETWORK STATE
 
-        capital[0] = Capital(495, 0); //ANNEXATION CAPITAL TREASURY
-        capital[1] = Capital(615, 0); //AUTONOMOUS ZONE CAPITAL TREASURY
-        capital[2] = Capital(661, 0); //SANCTION CAPITAL TREASURY
-        capital[3] = Capital(303, 0); //NETWORK STATE CAPITAL TREASURY
+        capital[0] = Capital(495, 0, 100000000000000000000000, "ANNEXATION"); //ANNEXATION CAPITAL TREASURY
+        capital[1] = Capital(615, 0, 100000000000000000000000, "AUTONOMOUS ZONE"); //AUTONOMOUS ZONE CAPITAL TREASURY
+        capital[2] = Capital(661, 0, 100000000000000000000000, "SANCTION"); //SANCTION CAPITAL TREASURY
+        capital[3] = Capital(303, 0, 100000000000000000000000, "NETWORK STATE"); //NETWORK STATE CAPITAL TREASURY
 
     }
 
@@ -172,8 +174,8 @@ contract StorageV2 is Ownable {
         uint256 _citadelId, 
         uint256[] calldata _pilotIds, 
         uint256 _gridId, 
-        uint8 _factionId,
-        bool _isSovereign
+        uint8 _capitalId,
+        uint256 _sovereignUntil
     ) public {
         require(msg.sender == accessAddress, "cannot call function directly");
         require(grid[_gridId].isLit, "grid already lit");
@@ -194,14 +196,13 @@ contract StorageV2 is Ownable {
 
         if(citadel[_citadelId].timeLit == 0) {
             citadel[_citadelId].timeLit = block.timestamp;
-            citadel[_citadelId].factionId = _factionId;
+            citadel[_citadelId].capitalId = _capitalId;
         }
 
-        grid[_gridId] = Grid(false, _isSovereign, true, _citadelId);
+        grid[_gridId] = Grid(false, _sovereignUntil, true, _citadelId);
     }
 
     function usurpCitadel(uint256 _fromCitadel, uint256 _toCitadel) internal {
-
         uint256 fromGrid = citadel[_fromCitadel].gridId;
         uint256 toGrid = citadel[_toCitadel].gridId;
         citadel[_fromCitadel].gridId = toGrid;
@@ -225,8 +226,8 @@ contract StorageV2 is Ownable {
         citadel[toCitadelId].gridId = _fromGrid;
     }
 
-    function getGrid(uint256 _gridId) internal view returns (uint256, bool, bool, bool) {
-        return (grid[_gridId].citadelId, grid[_gridId].isCapital, grid[_gridId].isSovereign, grid[_gridId].isLit);
+    function getGrid(uint256 _gridId) internal view returns (uint256, bool, uint256, bool) {
+        return (grid[_gridId].citadelId, grid[_gridId].isCapital, grid[_gridId].sovereignUntil, grid[_gridId].isLit);
     }
 
     function getGridFromCitadel(uint256 _citadelId) internal view returns (uint256) {
@@ -249,7 +250,7 @@ contract StorageV2 is Ownable {
         pilot[_pilotId] = false;
 
         if (citadel[_citadelId].pilot.length == 0) {
-            citadel[_citadelId].factionId = 0;
+            citadel[_citadelId].capitalId = 0;
             citadel[_citadelId].timeOfLastClaim = 0;
             citadel[_citadelId].timeLit = 0;
         }
@@ -280,10 +281,11 @@ contract StorageV2 is Ownable {
         
         citadel[_citadelId].timeOfLastClaim = block.timestamp;
         citadel[_citadelId].unclaimedDrakma = 0;
-        if (!combatEngine.isTreasuryMaxed(capital[citadel[_citadelId].factionId].treasury)) {
-            capital[citadel[_citadelId].factionId].treasury += (drakmaToClaim / 10);
+        if (!combatEngine.isTreasuryMaxed(capital[citadel[_citadelId].capitalId].treasury)) {
+            capital[citadel[_citadelId].capitalId].treasury += (drakmaToClaim / 10);
+            return (drakmaToClaim * 9) / 10;
         }
-        return (drakmaToClaim * 9) / 10;
+        return (drakmaToClaim / 10);
     }
 
     function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) public {
@@ -491,7 +493,6 @@ contract StorageV2 is Ownable {
             }
         }
 
-
         // calculate dk to tx
         uint256 drakmaAvailable = combatEngine.calculateMiningOutput(
             toCitadel, 
@@ -583,6 +584,14 @@ contract StorageV2 is Ownable {
         fleet[_fromCitadel].stationedFleet.drebentraakht -= _fleet[2];
     }
 
+    function bribeCapital(uint256 _citadelId, uint8 _capitalId) public returns (uint256) {
+        require(msg.sender == accessAddress, "cannot call function directly");
+        require(!combatEngine.isTreasuryMaxed(capital[citadel[_citadelId].capitalId].treasury), "treasury maxed");
+        citadel[_citadelId].capitalId = _capitalId;
+        capital[_capitalId].treasury += capital[_capitalId].bribeAmt;
+        return capital[_capitalId].bribeAmt;
+    }
+
     function getCitadelFleetCount(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
         (
             uint256 sifGattaca, 
@@ -626,6 +635,14 @@ contract StorageV2 is Ownable {
         uint256 miningStartTime = citadel[_citadelId].timeOfLastClaim == 0 ? citadel[_citadelId].timeLit : citadel[_citadelId].timeOfLastClaim;
         miningStartTime = citadel[_citadelId].timeLastSieged > miningStartTime ? citadel[_citadelId].timeLastSieged : miningStartTime;
         return miningStartTime;
+    }
+
+    function getCapital(uint8 _capitalId) public view returns (uint256, uint256, uint256) {
+        return (
+            capital[_capitalId].gridId, 
+            capital[_capitalId].treasury, 
+            capital[_capitalId].bribeAmt
+        );
     }
 
     // only owner

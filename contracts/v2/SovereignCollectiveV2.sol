@@ -21,6 +21,7 @@ contract SovereignCollectiveV2 is Ownable {
     mapping(uint256 => Sovereign) public collective;
 
     address accessAddress;
+    uint256 capitalBribeAmt = 128000000000000000000000;
     
     constructor(IPILOT _pilotCollection) {
         pilotCollection = _pilotCollection;
@@ -46,9 +47,10 @@ contract SovereignCollectiveV2 is Ownable {
         collective[_sovereignId].isSovereign = false;
     }
 
-    function bribeCapital(uint256 _sovereignId) public {
+    function bribeCapital(uint256 _sovereignId, uint256 _capitalId) public {
         require(msg.sender == accessAddress, "cannot call function directly");
         collective[_sovereignId].lastBribe = block.timestamp;
+        collective[_sovereignId].capitalId = _capitalId;
     }
 
     // only owner
