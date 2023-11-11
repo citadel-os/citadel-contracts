@@ -14,7 +14,7 @@ interface ICOMBATENGINE {
         uint256 _drebentraakht
     ) external view returns (uint256);
     function combatDP(
-        uint256 _citadelId, 
+        uint256 _citadelId,
         uint256[] memory _pilotIds, 
         uint256 _sifGattaca, 
         uint256 _mhrudvogThrot, 
@@ -587,8 +587,15 @@ contract StorageV2 is Ownable {
     function bribeCapital(uint256 _citadelId, uint8 _capitalId) public returns (uint256) {
         require(msg.sender == accessAddress, "cannot call function directly");
         require(!combatEngine.isTreasuryMaxed(capital[citadel[_citadelId].capitalId].treasury), "treasury maxed");
+        require(grid[citadel[_citadelId].gridId].sovereignUntil != 0, "grid must be sovereign to bribe");
         citadel[_citadelId].capitalId = _capitalId;
         capital[_capitalId].treasury += capital[_capitalId].bribeAmt;
+        if (grid[citadel[_citadelId].gridId].sovereignUntil > block.timestamp) {
+            grid[citadel[_citadelId].gridId].sovereignUntil += 64 days;
+        } else {
+            grid[citadel[_citadelId].gridId].sovereignUntil = block.timestamp + 64 days;
+        }
+        
         return capital[_capitalId].bribeAmt;
     }
 
