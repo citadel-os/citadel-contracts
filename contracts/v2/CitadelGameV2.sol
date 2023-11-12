@@ -41,6 +41,8 @@ interface ISTORAGEV2 {
     ) external;
     function bribeCapital(uint256 _citadelId, uint8 _capitalId) external returns (uint256);
     function getCapital(uint8 _capitalId) external view returns (uint256, uint256, uint256);
+    function sackCapital(uint256 _citadelId, uint8 _capitalId, uint256 bribeAmt, string calldata name) external returns (uint256);
+    function overthrowSovereign(uint256 _fromCitadelId, uint256 _toCitadelId, uint8 _capitalId) external returns (uint256);
 }
 
 interface ICOMBATENGINE {
@@ -61,6 +63,8 @@ interface ISOVEREIGN {
     function initializeSovereign(uint256 _sovereignId, uint256 _capitalId) external;
     function isSovereignOnLite(uint256 _sovereignId) external view returns (uint256 sovereignUntil);
     function bribeCapital(uint256 _sovereignId, uint256 _capitalId) external;
+    function isSovereign(uint256 _sovereignId) external view returns (bool);
+    function usurpSovereign(uint256 _usurper, uint256 _sovereignId, uint256 _capitalId) external;
 }
 
 
@@ -199,9 +203,63 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             citadelCollection.ownerOf(_citadelId) == msg.sender,
             "must own citadel"
         );
+        require(
+            sovereignCollective.isSovereign(_sovereignId), 
+            "pilot must be sovereign"
+        );
 
         uint256 bribeAmt = storageEngine.bribeCapital(_citadelId, _capitalId);
         require(drakma.transferFrom(msg.sender, address(this), bribeAmt));
         sovereignCollective.bribeCapital(_sovereignId, _capitalId);
+    }
+
+    function sackCapital(
+        uint256 _citadelId,
+        uint8 _capitalId, 
+        uint256 bribeAmt, 
+        string calldata name
+    ) external nonReentrant {
+        require(
+            citadelCollection.ownerOf(_citadelId) == msg.sender,
+            "must own citadel"
+        );
+        require(
+            _capitalId < 4,
+            "invalid capital"
+        );
+        uint256 treasuryAmt = storageEngine.sackCapital(_citadelId, _capitalId, bribeAmt, name);
+        if (treasuryAmt > 0) {
+            require(drakma.transferFrom(address(this), msg.sender, treasuryAmt));
+        }
+    }
+
+    function overthrowSovereign(
+        uint256 _fromCitadelId, 
+        uint256 _toCitadelId,
+        uint256 _usurper, 
+        uint256 _sovereignId,
+        uint8 _capitalId
+    ) external nonReentrant {
+        require(
+            pilotCollection.ownerOf(_usurper) == msg.sender,
+            "must own usurpur"
+        );
+        require(
+            citadelCollection.ownerOf(_fromCitadelId) == msg.sender,
+            "must own citadel"
+        );
+        require(
+            sovereignCollective.isSovereign(_sovereignId), 
+            "pilot must be sovereign"
+        );
+        require(
+            _capitalId < 4,
+            "invalid capital"
+        );
+        uint256 overthrowAmt = storageEngine.overthrowSovereign(_fromCitadelId, _toCitadelId, _capitalId);
+        if (overthrowAmt > 0) {
+            require(drakma.transferFrom(msg.sender, address(this), overthrowAmt));
+        }
+        sovereignCollective.usurpSovereign(_usurper, _sovereignId, _capitalId);
     }
 }

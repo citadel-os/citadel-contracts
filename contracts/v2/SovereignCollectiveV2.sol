@@ -40,6 +40,13 @@ contract SovereignCollectiveV2 is Ownable {
         return false;
     }
 
+    function isSovereign(uint256 _sovereignId) public view returns (bool) {
+        if (collective[_sovereignId].lastBribe == 0) {
+            return false;
+        }
+        return true;
+    }
+
     function usurpSovereign(uint256 _usurper, uint256 _sovereignId, uint256 _capitalId) public {
         require(msg.sender == accessAddress, "cannot call function directly");
         require(!collective[_usurper].isSovereign, "sovereign cannot usurp sovereign");

@@ -127,6 +127,7 @@ contract StorageV2 is Ownable {
         uint256 treasury;
         uint256 bribeAmt;
         string name;
+        uint256 lastSack;
     }
 
     // mappings
@@ -154,6 +155,10 @@ contract StorageV2 is Ownable {
     ) {
         combatEngine = _combatEngine;
         propaganda = _propaganda;
+        startGame();
+    }
+
+    function startGame() internal {
         gameStart = block.timestamp;
         
         // init capital cities
@@ -162,11 +167,10 @@ contract StorageV2 is Ownable {
         grid[303] = Grid(true, 0, true, 61); //SANCTION
         grid[495] = Grid(true, 0, true, 60); //NETWORK STATE
 
-        capital[0] = Capital(495, 0, 100000000000000000000000, "ANNEXATION"); //ANNEXATION CAPITAL TREASURY
-        capital[1] = Capital(615, 0, 100000000000000000000000, "AUTONOMOUS ZONE"); //AUTONOMOUS ZONE CAPITAL TREASURY
-        capital[2] = Capital(661, 0, 100000000000000000000000, "SANCTION"); //SANCTION CAPITAL TREASURY
-        capital[3] = Capital(303, 0, 100000000000000000000000, "NETWORK STATE"); //NETWORK STATE CAPITAL TREASURY
-
+        capital[0] = Capital(495, 0, 100000000000000000000000, "ANNEXATION", 0); //ANNEXATION CAPITAL TREASURY
+        capital[1] = Capital(615, 0, 100000000000000000000000, "AUTONOMOUS ZONE", 0); //AUTONOMOUS ZONE CAPITAL TREASURY
+        capital[2] = Capital(661, 0, 100000000000000000000000, "SANCTION", 0); //SANCTION CAPITAL TREASURY
+        capital[3] = Capital(303, 0, 100000000000000000000000, "NETWORK STATE", 0); //NETWORK STATE CAPITAL TREASURY
     }
 
     // public functions
@@ -427,10 +431,10 @@ contract StorageV2 is Ownable {
 
             // transfer 10% of siegeing dk to wallet who resolved
             uint256 drakmaFeeAvailable = combatEngine.calculateMiningOutput(
-            _fromCitadel, 
-            citadel[_fromCitadel].gridId, 
-            getMiningStartTime(_fromCitadel)
-        ) + citadel[_fromCitadel].unclaimedDrakma;
+                _fromCitadel, 
+                citadel[_fromCitadel].gridId, 
+                getMiningStartTime(_fromCitadel)
+            ) + citadel[_fromCitadel].unclaimedDrakma;
             return (drakmaFeeAvailable / 10);
         }
         
@@ -590,14 +594,33 @@ contract StorageV2 is Ownable {
         require(grid[citadel[_citadelId].gridId].sovereignUntil != 0, "grid must be sovereign to bribe");
         citadel[_citadelId].capitalId = _capitalId;
         capital[_capitalId].treasury += capital[_capitalId].bribeAmt;
-        if (grid[citadel[_citadelId].gridId].sovereignUntil > block.timestamp) {
-            grid[citadel[_citadelId].gridId].sovereignUntil += 64 days;
-        } else {
-            grid[citadel[_citadelId].gridId].sovereignUntil = block.timestamp + 64 days;
-        }
+        grid[citadel[_citadelId].gridId].sovereignUntil += 64 days;
         
         return capital[_capitalId].bribeAmt;
     }
+
+    function overthrowSovereign(uint256 _fromCitadelId, uint256 _toCitadelId, uint8 _capitalId) public returns (uint256) {
+        uint256 fromGridId = getGridFromCitadel(_fromCitadelId);
+        uint256 toGridId = getGridFromCitadel(_toCitadelId);
+        require(msg.sender == accessAddress, "cannot call function directly");
+        require(grid[toGridId].sovereignUntil < block.timestamp, "cannot overthrow sovereign");
+
+        swapGrid(fromGridId, toGridId);
+        grid[toGridId].sovereignUntil = block.timestamp + 64 days;
+
+        return (capital[_capitalId].bribeAmt * 2);
+    }
+
+    function sackCapital(uint256 _citadelId, uint8 _capitalId, uint256 bribeAmt, string calldata name) public returns (uint256) {
+        require(msg.sender == accessAddress, "cannot call function directly");
+        require(citadel[_citadelId].gridId == capital[_capitalId].gridId, "cannot sack capital");
+        require(capital[_capitalId].lastSack > block.timestamp + 60 days, "cannot sack capital");
+        capital[_capitalId].bribeAmt = bribeAmt;
+        capital[_capitalId].name = name;
+
+        return capital[_capitalId].treasury;
+    }
+
 
     function getCitadelFleetCount(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
         (
