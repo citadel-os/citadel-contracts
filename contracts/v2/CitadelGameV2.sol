@@ -34,6 +34,7 @@ interface ISTORAGEV2 {
         uint256[] calldata _pilot, 
         uint256[] calldata _fleet
     ) external returns (uint256);
+    function resolveSiege(uint256 _fromCitadel) external returns (uint256);
     function sendReinforcements(
         uint256 _fromCitadel,
         uint256 _toCitadel,
@@ -82,7 +83,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
 
     // variables
     uint256 maxGrid = 1023;
-    uint8 maxFaction = 4;
+    uint8 maxCapital = 4;
 
     constructor(
         IERC721 _citadelCollection, 
@@ -109,7 +110,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         uint8 _capitalId
     ) external nonReentrant {
         require(_gridId <= maxGrid && _gridId != 0, "invalid grid");
-        require(_capitalId <= maxFaction, "invalid capital");
+        require(_capitalId < maxCapital, "invalid capital");
         uint256 sovereignUntil;
         for (uint256 i; i < _pilotIds.length; ++i) {
             require(
@@ -139,6 +140,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             "must own citadel"
         );
         uint256 drakmaToClaim = storageEngine.claim(_citadelId);
+
         if(drakmaToClaim > 0) {
             drakma.safeTransfer(msg.sender, drakmaToClaim);
         }
@@ -171,6 +173,14 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             drakma.safeTransfer(msg.sender, dk);
         }
 
+        propaganda.dispatchCitadelEvent(_fromCitadel);
+    }
+
+    function resolveSiege(uint256 _fromCitadel) external nonReentrant {
+        uint256 dkRake =  storageEngine.resolveSiege(_fromCitadel);
+        if (dkRake > 0) {
+            drakma.safeTransfer(msg.sender, dkRake);
+        }
         propaganda.dispatchCitadelEvent(_fromCitadel);
     }
 
@@ -224,7 +234,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             "must own citadel"
         );
         require(
-            _capitalId < 4,
+            _capitalId < maxCapital,
             "invalid capital"
         );
         uint256 treasuryAmt = storageEngine.sackCapital(_citadelId, _capitalId, bribeAmt, name);
@@ -253,7 +263,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             "pilot must be sovereign"
         );
         require(
-            _capitalId < 4,
+            _capitalId < maxCapital,
             "invalid capital"
         );
         uint256 overthrowAmt = storageEngine.overthrowSovereign(_fromCitadelId, _toCitadelId, _capitalId);
@@ -261,5 +271,8 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             require(drakma.transferFrom(msg.sender, address(this), overthrowAmt));
         }
         sovereignCollective.usurpSovereign(_usurper, _sovereignId, _capitalId);
+
+        propaganda.dispatchCitadelEvent(_fromCitadelId);
+        propaganda.dispatchCitadelEvent(_toCitadelId);
     }
 }
