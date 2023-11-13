@@ -41,7 +41,7 @@ interface ISTORAGEV2 {
         uint256[] calldata _fleet
     ) external;
     function bribeCapital(uint256 _citadelId, uint8 _capitalId) external returns (uint256);
-    function getCapital(uint8 _capitalId) external view returns (uint256, uint256, uint256);
+    function getCapital(uint8 _capitalId) external view returns (uint256, uint256, uint256, uint256);
     function sackCapital(uint256 _citadelId, uint8 _capitalId, uint256 bribeAmt, string calldata name) external returns (uint256);
     function overthrowSovereign(uint256 _fromCitadelId, uint256 _toCitadelId, uint8 _capitalId) external returns (uint256);
 }
@@ -84,6 +84,9 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     // variables
     uint256 maxGrid = 1023;
     uint8 maxCapital = 4;
+
+    // mappings
+    mapping(address => uint8) winners; // index is walletAddress
 
     constructor(
         IERC721 _citadelCollection, 
@@ -274,5 +277,19 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
 
         propaganda.dispatchCitadelEvent(_fromCitadelId);
         propaganda.dispatchCitadelEvent(_toCitadelId);
+    }
+
+    function winCitadel() external nonReentrant {
+        uint8 i;
+        while (i < maxCapital) {
+            uint256 citadelId;
+            (,,,citadelId) = storageEngine.getCapital(i);
+            require(
+                citadelCollection.ownerOf(citadelId) == msg.sender,
+                "must own citadel"
+            );
+            i++;
+        }
+        winners[msg.sender] = winners[msg.sender]++;
     }
 }

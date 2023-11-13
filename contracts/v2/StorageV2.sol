@@ -155,12 +155,12 @@ contract StorageV2 is Ownable {
     ) {
         combatEngine = _combatEngine;
         propaganda = _propaganda;
-        startGame();
+        initGame();
     }
 
-    function startGame() internal {
+    function initGame() internal {
         gameStart = block.timestamp;
-        
+
         // init capital cities
         grid[495] = Grid(true, 0, true, 63); //ANNEXATION
         grid[661] = Grid(true, 0, true, 62); //AUTONOMOUS ZONE
@@ -181,7 +181,7 @@ contract StorageV2 is Ownable {
         uint8 _capitalId,
         uint256 _sovereignUntil
     ) public {
-        require(msg.sender == accessAddress, "cannot call function directly");
+        checkAccess();
         require(grid[_gridId].isLit, "cannot lite");
         require(grid[_gridId].isCapital, "cannot lite");
         require(citadel[_citadelId].gridId == 0, "cannot lite");
@@ -242,7 +242,7 @@ contract StorageV2 is Ownable {
     }
 
     function dimGrid(uint256 _citadelId, uint256 _pilotId) public {
-        require(msg.sender == accessAddress, "cannot call function directly");
+        checkAccess();
         uint256 gridId = getGridFromCitadel(_citadelId);
         require(!grid[gridId].isCapital, "cannot dim capital");
         for (uint256 i; i < citadel[_citadelId].pilot.length; ++i) {
@@ -262,7 +262,7 @@ contract StorageV2 is Ownable {
     }
 
     function claim(uint256 _citadelId) public returns (uint256) {
-        require(msg.sender == accessAddress, "cannot call function directly");
+        checkAccess();
         return claimInternal(_citadelId);
     }
 
@@ -293,7 +293,7 @@ contract StorageV2 is Ownable {
     }
 
     function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) public {
-        require(msg.sender == accessAddress, "cannot call function directly");
+        checkAccess();
         resolveTraining(_citadelId);
         require(
             fleet[_citadelId].trainingDone == 0,
@@ -352,7 +352,7 @@ contract StorageV2 is Ownable {
         uint256 _pilotId, 
         uint256[] calldata _fleet
     ) public returns (uint256) {
-        require(msg.sender == accessAddress, "cannot call function directly");
+        checkAccess();
         if(citadel[_fromCitadel].capitalId != citadel[_toCitadel].capitalId) {
             require(grid[citadel[_toCitadel].gridId].sovereignUntil < block.timestamp, "cannot siege");
         }
@@ -420,7 +420,7 @@ contract StorageV2 is Ownable {
             [6] = defendingDrebentraakht
     */
     function resolveSiege(uint256 _fromCitadel) public returns (uint256) {
-        require(msg.sender == accessAddress, "cannot call function directly");
+        checkAccess();
         require(
             siege[_fromCitadel].timeSiegeHits <= block.timestamp,
             "cannot resolve siege"
@@ -575,8 +575,7 @@ contract StorageV2 is Ownable {
         uint256 _toCitadel,
         uint256[] calldata _fleet
     ) public {
-        require(msg.sender == accessAddress, "cannot call function directly");
-
+        checkAccess();
         resolveFleet(_fromCitadel);
         require(reinforcements[_fromCitadel].fleetArrivalTime == 0, "cannot reinforce");
         validateFleet(_fromCitadel, _fleet);
@@ -594,7 +593,7 @@ contract StorageV2 is Ownable {
     }
 
     function bribeCapital(uint256 _citadelId, uint8 _capitalId) public returns (uint256) {
-        require(msg.sender == accessAddress, "cannot call function directly");
+        checkAccess();
         require(!combatEngine.isTreasuryMaxed(capital[citadel[_citadelId].capitalId].treasury), "cannot bribe");
         require(grid[citadel[_citadelId].gridId].sovereignUntil != 0, "cannot bribe");
         citadel[_citadelId].capitalId = _capitalId;
@@ -605,9 +604,9 @@ contract StorageV2 is Ownable {
     }
 
     function overthrowSovereign(uint256 _fromCitadelId, uint256 _toCitadelId, uint8 _capitalId) public returns (uint256) {
+        checkAccess();
         uint256 fromGridId = getGridFromCitadel(_fromCitadelId);
         uint256 toGridId = getGridFromCitadel(_toCitadelId);
-        require(msg.sender == accessAddress, "cannot call function directly");
         require(grid[toGridId].sovereignUntil < block.timestamp, "cannot overthrow");
 
         swapGrid(fromGridId, toGridId);
@@ -617,13 +616,33 @@ contract StorageV2 is Ownable {
     }
 
     function sackCapital(uint256 _citadelId, uint8 _capitalId, uint256 bribeAmt, string calldata name) public returns (uint256) {
-        require(msg.sender == accessAddress, "cannot call function directly");
+        checkAccess();
         require(citadel[_citadelId].gridId == capital[_capitalId].gridId, "cannot sack");
         require(capital[_capitalId].lastSack > block.timestamp + 60 days, "cannot sack");
         capital[_capitalId].bribeAmt = bribeAmt;
         capital[_capitalId].name = name;
 
         return capital[_capitalId].treasury;
+    }
+
+    function checkAccess() internal view {
+        require(msg.sender == accessAddress, "cannot call function directly");
+    }
+
+    function winCitadel() public {
+        checkAccess();
+
+        uint i;
+        while (i < 1024) {
+            delete grid[i];
+            delete citadel[i];
+            delete fleet[i];
+            delete siege[i];
+            delete reinforcements[i];
+            delete pilot[i];
+            delete pilot[2047 - i];
+            i++;
+        }
     }
 
 
@@ -672,11 +691,12 @@ contract StorageV2 is Ownable {
         return miningStartTime;
     }
 
-    function getCapital(uint8 _capitalId) public view returns (uint256, uint256, uint256) {
+    function getCapital(uint8 _capitalId) public view returns (uint256, uint256, uint256, uint256) {
         return (
             capital[_capitalId].gridId, 
             capital[_capitalId].treasury, 
-            capital[_capitalId].bribeAmt
+            capital[_capitalId].bribeAmt,
+            grid[capital[_capitalId].gridId].citadelId
         );
     }
 
