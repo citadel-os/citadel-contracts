@@ -17,6 +17,8 @@ describe.only("citadel game v2", function () {
         this.PilotNFT = await ethers.getContractFactory("PilotNFT");
         this.Drakma = await ethers.getContractFactory("Drakma");
         this.CitadelExordium = await ethers.getContractFactory("CitadelExordium");
+        this.Propaganda = await ethers.getContractFactory("PropagandaV2");
+        this.SovereignCollectiveV2 = await ethers.getContractFactory("SovereignCollectiveV2");
         this.CombatEngineV2 = await ethers.getContractFactory("CombatEngineV2");
         this.StorageV2 = await ethers.getContractFactory("StorageV2");
         this.CitadelGameV2 = await ethers.getContractFactory("CitadelGameV2");
@@ -46,13 +48,23 @@ describe.only("citadel game v2", function () {
         );
       await this.pilotNFT.deployed();
 
-      this.combatEngineV2 = await this.CombatEngineV2.deploy(
+      this.sovereignCollectiveV2 = await this.SovereignCollectiveV2.deploy(
         this.pilotNFT.address
+      );
+      await this.sovereignCollectiveV2.deployed();
+
+      this.propaganda = await this.Propaganda.deploy();
+      await this.propaganda.deployed();
+
+      this.combatEngineV2 = await this.CombatEngineV2.deploy(
+        this.pilotNFT.address,
+        this.drakma.address
       );
       await this.combatEngineV2.deployed();
 
       this.storageV2 = await this.StorageV2.deploy(
-        this.combatEngineV2.address
+        this.combatEngineV2.address,
+        this.propaganda.address
       );
       await this.storageV2.deployed();
 
@@ -61,7 +73,9 @@ describe.only("citadel game v2", function () {
         this.pilotNFT.address,
         this.drakma.address,
         this.storageV2.address,
-        this.combatEngineV2.address
+        this.combatEngineV2.address,
+        this.propaganda.address,
+        this.sovereignCollectiveV2.address
       );
       await this.citadelGameV2.deployed();
 
@@ -81,7 +95,7 @@ describe.only("citadel game v2", function () {
       it("lites 2 pilot to grid", async function () {
         [owner, addr1] = await ethers.getSigners();
 
-        await this.citadelGameV2.liteGrid(2, [1,2], 512, 1);
+        await this.citadelGameV2.liteGrid(2, [1,2], 660, 1);
         
       });
 

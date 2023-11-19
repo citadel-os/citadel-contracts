@@ -18,10 +18,6 @@ interface ISTORAGEV2 {
     function claim(
         uint256 _citadelId
     ) external returns (uint256);
-    function dimGrid(
-        uint256 _citadelId,
-        uint256 _pilotId
-    ) external;
     function trainFleet(
         uint256 _citadelId, 
         uint256 _sifGattaca, 
@@ -127,15 +123,6 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             }
         }
         storageEngine.liteGrid(_citadelId, _pilotIds, _gridId, _capitalId, sovereignUntil);
-    }
-
-    function dimGrid(uint256 _citadelId, uint256 _pilotId) external nonReentrant {
-        require(
-            pilotCollection.ownerOf(_pilotId) == msg.sender,
-            "must own pilot to dim"
-        );
-
-        storageEngine.dimGrid(_citadelId, _pilotId);
     }
 
     function claim(uint256 _citadelId) external nonReentrant {

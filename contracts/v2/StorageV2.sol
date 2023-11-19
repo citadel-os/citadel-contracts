@@ -160,15 +160,15 @@ contract StorageV2 is Ownable {
 
     function resetGame() public {
         checkAccess();
-        for (uint256 i = 0; i < 1024; ++i) {
-            delete citadel[i];
-            delete fleet[i];
-            delete siege[i];
-            delete reinforcements[i];
-            delete pilot[i];
-            delete pilot[i+1024];
-            delete grid[i];
-        }
+        // for (uint256 i = 0; i < 1024; ++i) {
+        //     delete citadel[i];
+        //     delete fleet[i];
+        //     delete siege[i];
+        //     delete reinforcements[i];
+        //     delete pilot[i];
+        //     delete pilot[i+1024];
+        //     delete grid[i];
+        // }
         initGame();
     }
 
@@ -196,12 +196,12 @@ contract StorageV2 is Ownable {
         uint256 _sovereignUntil
     ) public {
         checkAccess();
-        require(grid[_gridId].isLit, "cannot lite");
-        require(grid[_gridId].isCapital, "cannot lite");
-        require(citadel[_citadelId].gridId == 0, "cannot lite");
+        require(!grid[_gridId].isLit, "cannot lite 1");
+        require(!grid[_gridId].isCapital, "cannot lite 2");
+        require(citadel[_citadelId].gridId == 0, "cannot lite 3");
 
         for (uint256 i; i < _pilotIds.length; ++i) {
-            require(!pilot[_pilotIds[i]], "cannot lite");
+            require(!pilot[_pilotIds[i]], "cannot lite 4");
             citadel[_citadelId].pilot.push(_pilotIds[i]);
             pilot[_pilotIds[i]] = true;
         }
@@ -229,7 +229,7 @@ contract StorageV2 is Ownable {
     }
 
     function swapGridSafe(uint256 _fromGrid, uint256 _toGrid) internal {
-        require(grid[_toGrid].isLit, "cannot usurp lit grid");
+        require(!grid[_toGrid].isLit, "cannot usurp lit grid");
         swapGrid(_fromGrid, _toGrid);
     }
 
