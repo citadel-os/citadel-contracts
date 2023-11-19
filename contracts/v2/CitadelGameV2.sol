@@ -44,6 +44,7 @@ interface ISTORAGEV2 {
     function getCapital(uint8 _capitalId) external view returns (uint256, uint256, uint256, uint256);
     function sackCapital(uint256 _citadelId, uint8 _capitalId, uint256 bribeAmt, string calldata name) external returns (uint256);
     function overthrowSovereign(uint256 _fromCitadelId, uint256 _toCitadelId, uint8 _capitalId) external returns (uint256);
+    function resetGame() external;
 }
 
 interface ICOMBATENGINE {
@@ -291,5 +292,6 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             i++;
         }
         winners[msg.sender] = winners[msg.sender]++;
+        storageEngine.resetGame();
     }
 }

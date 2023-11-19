@@ -158,6 +158,20 @@ contract StorageV2 is Ownable {
         initGame();
     }
 
+    function resetGame() public {
+        checkAccess();
+        for (uint256 i = 0; i < 1024; ++i) {
+            delete citadel[i];
+            delete fleet[i];
+            delete siege[i];
+            delete reinforcements[i];
+            delete pilot[i];
+            delete pilot[i+1024];
+            delete grid[i];
+        }
+        initGame();
+    }
+
     function initGame() internal {
         gameStart = block.timestamp;
 
@@ -241,38 +255,9 @@ contract StorageV2 is Ownable {
         return citadel[_citadelId].gridId;
     }
 
-    function dimGrid(uint256 _citadelId, uint256 _pilotId) public {
-        checkAccess();
-        uint256 gridId = getGridFromCitadel(_citadelId);
-        require(!grid[gridId].isCapital, "cannot dim capital");
-        for (uint256 i; i < citadel[_citadelId].pilot.length; ++i) {
-            if (citadel[_citadelId].pilot[i] == _pilotId) {
-                removePilot(i, _citadelId);
-                break;
-            }
-        }
-        pilot[_pilotId] = false;
-
-        if (citadel[_citadelId].pilot.length == 0) {
-            citadel[_citadelId].capitalId = 0;
-            citadel[_citadelId].timeOfLastClaim = 0;
-            citadel[_citadelId].timeLit = 0;
-        }
-        grid[gridId].isLit = false;
-    }
-
     function claim(uint256 _citadelId) public returns (uint256) {
         checkAccess();
         return claimInternal(_citadelId);
-    }
-
-    function removePilot(uint256 _index, uint256 _citadelId) internal {
-        if (_index >= citadel[_citadelId].pilot.length) return;
-
-        for (uint256 i = _index; i<citadel[_citadelId].pilot.length-1; i++){
-            citadel[_citadelId].pilot[i] = citadel[_citadelId].pilot[i+1];
-        }
-        citadel[_citadelId].pilot.pop();
     }
 
     function claimInternal(uint256 _citadelId) internal returns (uint256) {
