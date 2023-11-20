@@ -80,6 +80,7 @@ describe.only("citadel game v2", function () {
       await this.citadelGameV2.deployed();
 
       this.storageV2.updateAccessAddress(this.citadelGameV2.address);
+      this.sovereignCollectiveV2.updateAccessAddress(this.citadelGameV2.address);
 
       await this.drakma.mintDrakma(this.citadelGameV2.address, "2400000000000000000000000000");
     });
@@ -90,27 +91,66 @@ describe.only("citadel game v2", function () {
             await this.pilotNFT.reservePILOT(256);
             await this.citadelNFT.reserveCitadel(1024);
 
+            await this.drakma.mintDrakma(owner.address, "4000000000000000000000000");
+            await this.drakma.approve(this.pilotNFT.address, "4000000000000000000000000");
+  
+            await this.pilotNFT.sovereignty(3);
+            [sovereign, level] = await this.pilotNFT.getOnchainPILOT(3);
+            expect(sovereign).to.equal(true);
         });
 
       it("lites 2 pilot to grid", async function () {
         [owner, addr1] = await ethers.getSigners();
 
-        await this.citadelGameV2.liteGrid(2, [1,2], 660, 1);
+        let citadelId = 2;
+        let gridId = 660;
+        let capitalId = 1;
+        await this.citadelGameV2.liteGrid(citadelId, [1,2], gridId, capitalId);
+        let grid = await this.storageV2.grid(gridId);
+        expect(grid.isCapital).to.equal(false);
+        expect(grid.sovereignUntil).to.equal(0);
+        expect(grid.isLit).to.equal(true);
+        expect(grid.citadelId).to.equal(citadelId);
+
+        let citadel = await this.storageV2.citadel(citadelId);
+        expect(citadel.capitalId).to.equal(capitalId);
+        expect(citadel.timeOfLastClaim).to.equal(0);
+        expect(Number(citadel.timeLit.toString())).to.be.greaterThan(0);
+        expect(citadel.unclaimedDrakma).to.equal(0);
+        expect(citadel.marker).to.equal(0);
         
       });
 
+      it("lites sovereign pilot to grid", async function () {
+        [owner, addr1] = await ethers.getSigners();
 
+        let citadelId = 2;
+        let gridId = 660;
+        let capitalId = 1;
+        await this.citadelGameV2.liteGrid(citadelId, [2,3], gridId, capitalId);
+        let grid = await this.storageV2.grid(gridId);
+        expect(grid.isCapital).to.equal(false);
+        expect(Number(grid.sovereignUntil.toString())).to.be.greaterThan(0);
+        expect(grid.isLit).to.equal(true);
+        expect(grid.citadelId).to.equal(citadelId);
 
-    describe("dims grid", function () {
-        beforeEach(async function () {
-            [owner, addr1] = await ethers.getSigners();
-            await this.pilotNFT.reservePILOT(256);
-            await this.citadelNFT.reserveCitadel(1024);
+        let citadel = await this.storageV2.citadel(citadelId);
+        expect(citadel.capitalId).to.equal(capitalId);
+        expect(citadel.timeOfLastClaim).to.equal(0);
+        expect(Number(citadel.timeLit.toString())).to.be.greaterThan(0);
+        expect(citadel.unclaimedDrakma).to.equal(0);
+        expect(citadel.marker).to.equal(0);
+        
+      });
 
-        });
+      it("reverts unowned citadel lit", async function () {
+        [owner, addr1] = await ethers.getSigners();
 
-
-    });
+        await expectRevert(
+          this.citadelGameV2.connect(addr1).liteGrid(40, [1,2], 660, 1),
+          "must own citadel"
+        );
+      });
 
     describe("claims drakma from grid", function () {
         beforeEach(async function () {

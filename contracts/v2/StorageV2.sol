@@ -131,12 +131,12 @@ contract StorageV2 is Ownable {
     }
 
     // mappings
-    mapping(uint256 => CitadelGrid) citadel; // index is _citadelId
+    mapping(uint256 => CitadelGrid) public citadel; // index is _citadelId
     mapping(uint256 => FleetAcademy) fleet; // index is _citadelId
     mapping(uint256 => Siege) siege; // index is _fromCitadelId
     mapping(uint256 => FleetReinforce) reinforcements; // index is _fromCitadelId
     mapping(uint256 => bool) pilot; // index is _pilotId, value isLit
-    mapping(uint256 => Grid) grid;
+    mapping(uint256 => Grid) public grid;
     mapping(uint8 => Capital) capital;
 
     //variables
@@ -196,12 +196,12 @@ contract StorageV2 is Ownable {
         uint256 _sovereignUntil
     ) public {
         checkAccess();
-        require(!grid[_gridId].isLit, "cannot lite 1");
-        require(!grid[_gridId].isCapital, "cannot lite 2");
-        require(citadel[_citadelId].gridId == 0, "cannot lite 3");
+        require(!grid[_gridId].isLit, "cannot lite");
+        require(!grid[_gridId].isCapital, "cannot lite");
+        require(citadel[_citadelId].gridId == 0, "cannot lite");
 
         for (uint256 i; i < _pilotIds.length; ++i) {
-            require(!pilot[_pilotIds[i]], "cannot lite 4");
+            require(!pilot[_pilotIds[i]], "cannot lite");
             citadel[_citadelId].pilot.push(_pilotIds[i]);
             pilot[_pilotIds[i]] = true;
         }
