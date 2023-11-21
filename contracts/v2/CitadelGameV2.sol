@@ -28,14 +28,14 @@ interface ISTORAGEV2 {
     function sendSiege(
         uint256 _fromCitadel, 
         uint256 _toCitadel, 
-        uint256[] calldata _pilot, 
-        uint256[] calldata _fleet
+        uint256 _pilotId, 
+        uint256[3] calldata _fleet
     ) external returns (uint256);
     function resolveSiege(uint256 _fromCitadel) external returns (uint256);
     function sendReinforcements(
         uint256 _fromCitadel,
         uint256 _toCitadel,
-        uint256[] calldata _fleet
+        uint256[3] calldata _fleet
     ) external;
     function bribeCapital(uint256 _citadelId, uint8 _capitalId) external returns (uint256);
     function getCapital(uint8 _capitalId) external view returns (uint256, uint256, uint256, uint256);
@@ -144,10 +144,6 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     }
 
     function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
-        require(
-            citadelCollection.ownerOf(_citadelId) == msg.sender,
-            "must own citadel"
-        );
         uint256 trainingCost = combatEngine.calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
         require(drakma.transferFrom(msg.sender, address(this), trainingCost));
         storageEngine.trainFleet(_citadelId, _sifGattaca, _mhrudvogThrot, _drebentraakht);
@@ -156,8 +152,8 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     function sendSiege(
         uint256 _fromCitadel, 
         uint256 _toCitadel, 
-        uint256[] calldata _pilot, 
-        uint256[] calldata _fleet
+        uint256 _pilotId, 
+        uint256[3] calldata _fleet
     ) external nonReentrant {
         require(_fromCitadel != _toCitadel, "cannot siege own citadel");
         require(
@@ -165,7 +161,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             "must own citadel"
         );
 
-        uint256 dk = storageEngine.sendSiege(_fromCitadel, _toCitadel, _pilot, _fleet);
+        uint256 dk = storageEngine.sendSiege(_fromCitadel, _toCitadel, _pilotId, _fleet);
         if (dk > 0) {
             drakma.safeTransfer(msg.sender, dk);
         }
@@ -184,7 +180,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     function sendReinforcements(
         uint256 _fromCitadel,
         uint256 _toCitadel,
-        uint256[] calldata _fleet
+        uint256[3] calldata _fleet
     ) external nonReentrant {
         require(
             citadelCollection.ownerOf(_fromCitadel) == msg.sender,

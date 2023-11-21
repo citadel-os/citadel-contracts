@@ -10,7 +10,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 chai.use(solidity);
 
-describe.only("citadel game v2", function () {
+describe("citadel game v2", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
@@ -81,6 +81,11 @@ describe.only("citadel game v2", function () {
 
       this.storageV2.updateAccessAddress(this.citadelGameV2.address);
       this.sovereignCollectiveV2.updateAccessAddress(this.citadelGameV2.address);
+      this.combatEngineV2.updateGameParams(
+        1,
+        30 * 60 * 1000,
+        this.citadelGameV2.address
+      );
 
       await this.drakma.mintDrakma(this.citadelGameV2.address, "2400000000000000000000000000");
     });
@@ -152,24 +157,126 @@ describe.only("citadel game v2", function () {
         );
       });
 
-    describe("claims drakma from grid", function () {
-        beforeEach(async function () {
-            [owner, addr1] = await ethers.getSigners();
-            await this.pilotNFT.reservePILOT(256);
-            await this.citadelNFT.reserveCitadel(1024);
+      it("reverts invalid capital", async function () {
+        [owner, addr1] = await ethers.getSigners();
 
-        });
+        await expectRevert(
+          this.citadelGameV2.liteGrid(40, [1,2], 660, 8),
+          "invalid capital"
+        );
+      });
+
+      it("reverts unowned pilot staked", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelNFT.transferFrom(owner.address, addr1.address, 40);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 1);
+
+        await expectRevert(
+          this.citadelGameV2.connect(addr1).liteGrid(40, [1,2], 512, 1),
+          "must own pilot to lite"
+        );
+      });
+
+      it("reverts invalid grid", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await expectRevert(
+          this.citadelGameV2.liteGrid(40, [1,2], 5000, 1),
+          "invalid grid"
+        );
+      });
+
+      it("reverts stake to lit grid", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV2.liteGrid(40, [1,2], 512, 1);
+
+        await expectRevert(
+          this.citadelGameV2.liteGrid(41, [], 512, 1),
+          "cannot lite"
+        );
+      });
+
+    });
+
+    describe("claims drakma from grid", function () {
+      beforeEach(async function () {
+          [owner, addr1] = await ethers.getSigners();
+          await this.pilotNFT.reservePILOT(256);
+          await this.citadelNFT.reserveCitadel(1024);
+      });
+
+      it("reverts claim of unowned citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await this.citadelGameV2.liteGrid(40, [1,2], 512, 1);
+        await expectRevert(
+          this.citadelGameV2.connect(addr1).claim(40),
+          "must own citadel"
+        );
+      });
+
+      it("claims dim citadel", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+
+        await this.citadelGameV2.claim(40);
+
+        drakmaOwner = await this.drakma.balanceOf(owner.address);
+        expect(Number(drakmaOwner.toString())).to.be.greaterThan(0);
+
+      });
+
+      it("reverts second claim inside interval", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV2.liteGrid(40, [], 512, 1);
+        await this.citadelGameV2.claim(40);
+
+        drakmaOwner = await this.drakma.balanceOf(owner.address);
+        expect(Number(drakmaOwner.toString())).to.be.greaterThan(0);
+
+        await expectRevert(
+          this.citadelGameV2.claim(40),
+          "one claim per interval permitted"
+        );
+      });
 
 
     });
 
-    describe("raiding", function () {
-        beforeEach(async function () {
-            [owner, addr1] = await ethers.getSigners();
-            await this.pilotNFT.reservePILOT(256);
-            await this.citadelNFT.reserveCitadel(1024);
+    describe.only("raiding", function () {
+      beforeEach(async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
 
-        });
+        await this.citadelGameV2.liteGrid(40, [1], 628, 1);
+        await this.drakma.mintDrakma(owner.address, "20000000000000000000");
+        await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000");
+        await this.citadelGameV2.trainFleet(40, 1, 0, 0);
+
+        await this.citadelGameV2.liteGrid(1021, [2,5,6], 272, 1);
+        await this.drakma.mintDrakma(owner.address, "20000000000000000000");
+        await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000");
+        await this.citadelGameV2.trainFleet(1021, 1, 0, 0);
+
+        await this.citadelNFT.transferFrom(owner.address, addr1.address, 1023);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 3);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 4);
+        await this.citadelGameV2.connect(addr1).liteGrid(1023, [3,4], 629, 2);
+        await this.drakma.mintDrakma(owner.address, "20000000000000000000");
+        await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000");
+        await this.citadelGameV2.trainFleet(1023, 1, 0, 0);
+
+      });
+
+      it("sends direct neighbor raid from 40 to 1023", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV2.sendSiege(40, 1023, 1, [100,0,0]);
+
+      });
 
     });
 
@@ -195,5 +302,4 @@ describe.only("citadel game v2", function () {
         });
 
     });
-})
 });

@@ -363,7 +363,7 @@ contract CombatEngineV2 is Ownable {
     }
 
     function calculateTrainedFleet(
-        uint256[] calldata _fleet,
+        uint256[3] calldata _fleet,
         uint256 _timeTrainingStarted,
         uint256 _timeTrainingDone
     ) public view returns (uint256, uint256, uint256) {
