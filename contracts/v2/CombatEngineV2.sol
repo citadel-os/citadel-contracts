@@ -54,11 +54,8 @@ contract CombatEngineV2 is Ownable {
         uint256 _drebentraakht
     ) public view returns (uint256) {
         uint256 multiple = 0;
-
-        if (_pilotId != 0) {
-            (,uint8 level) = pilotCollection.getOnchainPILOT(_pilotId);
-            multiple += pilotMultiple + (level * levelMultiple);
-        }
+        (,uint8 level) = pilotCollection.getOnchainPILOT(_pilotId);
+        multiple += pilotMultiple + (level * levelMultiple);
 
         return (((
             (_sifGattaca * sifGattacaOP) +
@@ -71,7 +68,7 @@ contract CombatEngineV2 is Ownable {
 
     function combatDP(
         uint256 _citadelId, 
-        uint256[] memory _pilotIds, 
+        uint256[3] memory _pilotIds, 
         uint256 _sifGattaca, 
         uint256 _mhrudvogThrot, 
         uint256 _drebentraakht
@@ -80,8 +77,10 @@ contract CombatEngineV2 is Ownable {
         uint256 siegeMultiple = 0;
         uint256 multiple = 0;
         for (uint256 i; i < _pilotIds.length; ++i) {
-            (,uint8 level) = pilotCollection.getOnchainPILOT(_pilotIds[i]);
-            multiple += pilotMultiple + (level * levelMultiple);
+            if (i != 0) {
+                (,uint8 level) = pilotCollection.getOnchainPILOT(_pilotIds[i]);
+                multiple += pilotMultiple + (level * levelMultiple);
+            }
         }
 
         multiple += calculateBaseCitadelMultiple(weaponsProp[_citadelId]);
@@ -110,32 +109,34 @@ contract CombatEngineV2 is Ownable {
         [0] uint256 _offensiveSifGattaca, 
         [1] uint256 _offensiveMhrudvogThrot, 
         [2] uint256 _offensiveDrebentraakht,
-        [3] uint256 _defensiveCitadelId,
-        [4] uint256 _defensiveSifGattaca, 
-        [5] uint256 _defensiveMhrudvogThrot, 
-        [6] uint256 _defensiveDrebentraakht
+        [3] uint256 _defensiveSifGattaca, 
+        [4] uint256 _defensiveMhrudvogThrot, 
+        [5] uint256 _defensiveDrebentraakht
     */
     function calculateDestroyedFleet(            
-        uint256 _offensivePilotIds,
-        uint256[] memory _defensivePilotIds,
-        uint256[7] memory _fleetTracker 
+        uint256 _offensivePilotId,
+        uint256[3] memory _defensivePilotIds,
+        uint256[6] memory _fleetTracker,
+        uint256 _defensiveCitadelId
     ) public view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
         uint256 op = combatOP(
-            _offensivePilotIds, 
+            _offensivePilotId, 
             _fleetTracker[0], 
             _fleetTracker[1], 
             _fleetTracker[2]
         );
 
         uint256 dp = combatDP(
-            _fleetTracker[3], 
+            _defensiveCitadelId, 
             _defensivePilotIds, 
+            _fleetTracker[3], 
             _fleetTracker[4], 
-            _fleetTracker[5], 
-            _fleetTracker[6]
+            _fleetTracker[5]
         );
 
-        (op, dp) = adjustedOPDP(op, dp);
+        if (dp > 0) {
+            (op, dp) = adjustedOPDP(op, dp);
+        }
 
         // offensive fleet destroyed & reuse var
        _fleetTracker[0] = (
@@ -151,6 +152,10 @@ contract CombatEngineV2 is Ownable {
         ) / ((op + dp) * 100);
 
         // defensive fleet destroyed & reuse var
+        _fleetTracker[3] = (
+            _fleetTracker[3] * op * 50
+        ) / ((op + dp) * 100);
+        
         _fleetTracker[4] = (
             _fleetTracker[4] * op * 50
         ) / ((op + dp) * 100);
@@ -158,24 +163,17 @@ contract CombatEngineV2 is Ownable {
         _fleetTracker[5] = (
             _fleetTracker[5] * op * 50
         ) / ((op + dp) * 100);
-        
-        _fleetTracker[6] = (
-            _fleetTracker[6] * op * 50
-        ) / ((op + dp) * 100);
-
-        //offensive win ratio, reuse fleetTracker[3]
-        _fleetTracker[3] = (
-            op
-        ) / ((op + dp) * 100);
 
         return (
             _fleetTracker[0],
             _fleetTracker[1],
             _fleetTracker[2],
+            _fleetTracker[3],
             _fleetTracker[4],
             _fleetTracker[5],
-            _fleetTracker[6],
-            _fleetTracker[3]
+            (
+                op
+            ) / (op + dp) * 100
         );
     }
 

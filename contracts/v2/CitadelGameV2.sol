@@ -11,8 +11,8 @@ import "hardhat/console.sol";
 interface ISTORAGEV2 {
     function liteGrid(
         uint256 _citadelId,
-        uint256[] calldata _pilotIds, 
-        uint256 _gridId, 
+        uint256[3] calldata _pilotIds, 
+        uint256 _gridId,
         uint8 _capitalId,
         uint256 sovereignUntil
     ) external;
@@ -53,12 +53,6 @@ interface ICOMBATENGINE {
     ) external returns (uint256);
 }
 
-interface IPROPAGANDA {
-    function dispatchCitadelEvent(
-        uint256 _citadelId
-    ) external view;
-}
-
 interface ISOVEREIGN {
     function initializeSovereign(uint256 _sovereignId, uint256 _capitalId) external;
     function isSovereignOnLite(uint256 _sovereignId) external view returns (bool);
@@ -77,7 +71,6 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     IERC721 public immutable pilotCollection;
     ISTORAGEV2 public immutable storageEngine;
     ICOMBATENGINE public immutable combatEngine;
-    IPROPAGANDA public immutable propaganda;
     ISOVEREIGN public immutable sovereignCollective;
 
     // variables
@@ -87,13 +80,16 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
     // mappings
     mapping(address => uint8) winners; // index is walletAddress
 
+    event CitadelEvent(
+        uint256 citadelId
+    );
+
     constructor(
         IERC721 _citadelCollection, 
         IERC721 _pilotCollection, 
         IERC20 _drakma, 
         ISTORAGEV2 _storageEngine,
         ICOMBATENGINE _combatEngine,
-        IPROPAGANDA _propaganda,
         ISOVEREIGN _sovereignCollective
     ) {
         citadelCollection = _citadelCollection;
@@ -101,13 +97,12 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         drakma = _drakma;
         storageEngine = _storageEngine;
         combatEngine = _combatEngine;
-        propaganda = _propaganda;
         sovereignCollective = _sovereignCollective;
     }
 
     function liteGrid(
         uint256 _citadelId, 
-        uint256[] calldata _pilotIds, 
+        uint256[3] calldata _pilotIds, 
         uint256 _gridId, 
         uint8 _capitalId
     ) external nonReentrant {
@@ -119,13 +114,15 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         );
         uint256 sovereignUntil;
         for (uint256 i; i < _pilotIds.length; ++i) {
-            require(
-                pilotCollection.ownerOf(_pilotIds[i]) == msg.sender,
-                "must own pilot to lite"
-            );
-            if (sovereignCollective.isSovereignOnLite(_pilotIds[i]) == true) {
-                sovereignUntil = block.timestamp + 64 days;
-                sovereignCollective.initializeSovereign(_pilotIds[i], _capitalId);
+            if (_pilotIds[i] != 0) {
+                require(
+                    pilotCollection.ownerOf(_pilotIds[i]) == msg.sender,
+                    "must own pilot to lite"
+                );
+                if (sovereignCollective.isSovereignOnLite(_pilotIds[i]) == true) {
+                    sovereignUntil = block.timestamp + 64 days;
+                    sovereignCollective.initializeSovereign(_pilotIds[i], _capitalId);
+                }
             }
         }
         storageEngine.liteGrid(_citadelId, _pilotIds, _gridId, _capitalId, sovereignUntil);
@@ -155,10 +152,10 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         uint256 _pilotId, 
         uint256[3] calldata _fleet
     ) external nonReentrant {
-        require(_fromCitadel != _toCitadel, "cannot siege own citadel");
+        require(_fromCitadel != _toCitadel && _pilotId != 0, "cannot siege");
         require(
             citadelCollection.ownerOf(_fromCitadel) == msg.sender,
-            "must own citadel"
+            "cannot siege"
         );
 
         uint256 dk = storageEngine.sendSiege(_fromCitadel, _toCitadel, _pilotId, _fleet);
@@ -166,7 +163,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             drakma.safeTransfer(msg.sender, dk);
         }
 
-        propaganda.dispatchCitadelEvent(_fromCitadel);
+        emit CitadelEvent(_fromCitadel);
     }
 
     function resolveSiege(uint256 _fromCitadel) external nonReentrant {
@@ -174,7 +171,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         if (dkRake > 0) {
             drakma.safeTransfer(msg.sender, dkRake);
         }
-        propaganda.dispatchCitadelEvent(_fromCitadel);
+        emit CitadelEvent(_fromCitadel);
     }
 
     function sendReinforcements(
@@ -189,8 +186,8 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
 
         storageEngine.sendReinforcements(_fromCitadel, _toCitadel, _fleet);
 
-        propaganda.dispatchCitadelEvent(_fromCitadel);
-        propaganda.dispatchCitadelEvent(_toCitadel);
+        emit CitadelEvent(_fromCitadel);
+        emit CitadelEvent(_toCitadel);
     }
 
     function bribeCapital(
@@ -265,8 +262,8 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         }
         sovereignCollective.usurpSovereign(_usurper, _sovereignId, _capitalId);
 
-        propaganda.dispatchCitadelEvent(_fromCitadelId);
-        propaganda.dispatchCitadelEvent(_toCitadelId);
+        emit CitadelEvent(_fromCitadelId);
+        emit CitadelEvent(_toCitadelId);
     }
 
     function winCitadel() external nonReentrant {

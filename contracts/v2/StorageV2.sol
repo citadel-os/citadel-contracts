@@ -32,8 +32,9 @@ interface ICOMBATENGINE {
     ) external view returns (uint256);
     function calculateDestroyedFleet(
         uint256 _offensivePilotId,
-        uint256[] memory _defensivePilotIds,
-        uint256[7] memory _fleetTracker
+        uint256[3] memory _defensivePilotIds,
+        uint256[6] memory _fleetTracker,
+        uint256 _defensiveCitadelId
     ) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256);
     function subgridDistortion() external view returns (uint256);
     function gridTraversalTime() external view returns (uint256);
@@ -54,28 +55,11 @@ interface ICOMBATENGINE {
     function isTreasuryMaxed(uint256 treasuryBal) external view returns (bool);
 }
 
-interface IPROPAGANDA {
-    function dispatchSiegeEvent(
-        uint256 _fromCitadelId, 
-        uint256 _toCitadelId, 
-        uint256 _timeSiegeHit, 
-        uint256 _offensiveCarryCapacity, 
-        uint256 _drakmaSieged, 
-        uint256 _offensiveSifGattacaDestroyed, 
-        uint256 _offensiveMhrudvogThrotDestroyed, 
-        uint256 _offensiveDrebentraakhtDestroyed, 
-        uint256 _defensiveSifGattacaDestroyed, 
-        uint256 _defensiveMhrudvogThrotDestroyed, 
-        uint256 _defensiveDrebentraakhtDestroyed
-    ) external view;
-}
-
 
 contract StorageV2 is Ownable {
 
     // imports
     ICOMBATENGINE public immutable combatEngine;
-    IPROPAGANDA public immutable propaganda;
 
     // data structures
     struct CitadelGrid {
@@ -85,7 +69,7 @@ contract StorageV2 is Ownable {
         uint256 timeLit;
         uint256 timeLastSieged;
         uint256 unclaimedDrakma;
-        uint256[] pilot;
+        uint256[3] pilot;
         uint8 marker;
     }
 
@@ -149,29 +133,40 @@ contract StorageV2 is Ownable {
     uint256 claimInterval = 64 days;
     address accessAddress;
 
+    event DispatchSiege(
+        uint256 fromCitadelId, 
+        uint256 toCitadelId,
+        uint256 timeSiegeHit,
+        uint256 offensiveCarryCapacity,
+        uint256 drakmaSieged,
+        uint256 offensiveSifGattacaDestroyed,
+        uint256 offensiveMhrudvogThrotDestroyed,
+        uint256 offensiveDrebentraakhtDestroyed,
+        uint256 defensiveSifGattacaDestroyed,
+        uint256 defensiveMhrudvogThrotDestroyed,
+        uint256 defensiveDrebentraakhtDestroyed
+    );
 
     constructor(
-        ICOMBATENGINE _combatEngine,
-        IPROPAGANDA _propaganda
+        ICOMBATENGINE _combatEngine
     ) {
         combatEngine = _combatEngine;
-        propaganda = _propaganda;
         initGame();
     }
 
-    // function resetGame() public {
-    //     checkAccess();
-    //     for (uint256 i = 0; i < 1024; ++i) {
-    //         delete citadel[i];
-    //         delete fleet[i];
-    //         delete siege[i];
-    //         delete reinforcements[i];
-    //         delete pilot[i];
-    //         delete pilot[i+1024];
-    //         delete grid[i];
-    //     }
-    //     initGame();
-    // }
+    function resetGame() public {
+        checkAccess();
+        for (uint256 i = 0; i < 1024; ++i) {
+            delete citadel[i];
+            delete fleet[i];
+            delete siege[i];
+            delete reinforcements[i];
+            delete pilot[i];
+            delete pilot[i+1024];
+            delete grid[i];
+        }
+        initGame();
+    }
 
     function initGame() internal {
         gameStart = block.timestamp;
@@ -191,7 +186,7 @@ contract StorageV2 is Ownable {
     // public functions
     function liteGrid(
         uint256 _citadelId, 
-        uint256[] calldata _pilotIds, 
+        uint256[3] calldata _pilotIds, 
         uint256 _gridId, 
         uint8 _capitalId,
         uint256 _sovereignUntil
@@ -199,24 +194,25 @@ contract StorageV2 is Ownable {
         checkAccess();
         require(!grid[_gridId].isLit, "cannot lite");
         require(!grid[_gridId].isCapital, "cannot lite");
-        require(citadel[_citadelId].gridId == 0, "cannot lite");
+        require(citadel[_citadelId].timeLit == 0, "cannot lite");
 
         for (uint256 i; i < _pilotIds.length; ++i) {
-            require(!pilot[_pilotIds[i]], "cannot lite");
-            citadel[_citadelId].pilot.push(_pilotIds[i]);
-            pilot[_pilotIds[i]] = true;
+            if (_pilotIds[i] != 0) {
+                require(!pilot[_pilotIds[i]], "cannot lite");
+                pilot[_pilotIds[i]] = true;
+            }
         }
 
-        uint256 fromGridId = _citadelId;
-        if (citadel[_citadelId].timeLit != 0) {
-            fromGridId = citadel[_citadelId].gridId;
-        }
-        swapGridSafe(fromGridId, _gridId);
-
-        if(citadel[_citadelId].timeLit == 0) {
-            citadel[_citadelId].timeLit = block.timestamp;
-            citadel[_citadelId].capitalId = _capitalId;
-        }
+        citadel[_citadelId] = CitadelGrid(
+            _gridId,
+            _capitalId,
+            0,
+            block.timestamp,
+            0,
+            0,
+            _pilotIds,
+            0
+        );
 
         grid[_gridId] = Grid(false, _sovereignUntil, true, _citadelId);
     }
@@ -340,7 +336,7 @@ contract StorageV2 is Ownable {
     ) public returns (uint256) {
         checkAccess();
         if(citadel[_fromCitadel].capitalId != citadel[_toCitadel].capitalId) {
-            require(grid[citadel[_toCitadel].gridId].sovereignUntil < block.timestamp, "cannot siege 1");
+            require(grid[citadel[_toCitadel].gridId].sovereignUntil < block.timestamp, "cannot siege");
         }
 
         resolveFleet(_fromCitadel);
@@ -350,10 +346,11 @@ contract StorageV2 is Ownable {
         (uint256 timeSiegeHits, uint256 gridDistance) = combatEngine.calculateGridTraversal(
             citadel[_fromCitadel].gridId, citadel[_toCitadel].gridId
         );
-        require(timeSiegeHits > citadel[_toCitadel].timeLastSieged + 1 days, "cannot siege 2");
+
+        require(timeSiegeHits > citadel[_toCitadel].timeLastSieged + 1 days, "cannot siege");
 
         if (_pilotId != 0) {
-            require(gridDistance == 0, "cannot siege 3");
+            require(gridDistance == 1, "cannot siege");
             bool pilotFound = false;
             for (uint256 j; j < citadel[_fromCitadel].pilot.length; ++j) {
                 if(_pilotId == citadel[_fromCitadel].pilot[j]) {
@@ -361,7 +358,7 @@ contract StorageV2 is Ownable {
                     break;
                 }
             }
-            require(pilotFound == true, "cannot siege 4");
+            require(pilotFound == true, "cannot siege");
         }
 
         siege[_fromCitadel] = Siege(
@@ -400,10 +397,9 @@ contract StorageV2 is Ownable {
             [0] = siege[_fromCitadel].fleet.sifGattaca
             [1] = siege[_fromCitadel].fleet.mhrudvogThrot
             [2] = siege[_fromCitadel].fleet.drebentraakht
-            [3] = toCitadel
-            [4] = defendingSifGattaca
-            [5] = defendingMhrudvogThrot
-            [6] = defendingDrebentraakht
+            [3] = defendingSifGattaca
+            [4] = defendingMhrudvogThrot
+            [5] = defendingDrebentraakht
     */
     function resolveSiege(uint256 _fromCitadel) public returns (uint256) {
         checkAccess();
@@ -416,7 +412,6 @@ contract StorageV2 is Ownable {
         resolveFleet(toCitadel);
         // if left on grid 24 hours from hit time, fleet to defenders defect
         if(block.timestamp > (siege[_fromCitadel].timeSiegeHits + siegeMaxExpiry)) {
-            console.log("blah not good");
             fleet[toCitadel].stationedFleet.sifGattaca += siege[_fromCitadel].fleet.sifGattaca;
             fleet[toCitadel].stationedFleet.mhrudvogThrot += siege[_fromCitadel].fleet.mhrudvogThrot;
             fleet[toCitadel].stationedFleet.drebentraakht += siege[_fromCitadel].fleet.drebentraakht;
@@ -430,24 +425,19 @@ contract StorageV2 is Ownable {
             ) + citadel[_fromCitadel].unclaimedDrakma;
             return (drakmaFeeAvailable / 10);
         }
-        
-        uint256[3] memory defendingFleetTracker;
+        uint256[6] memory tempTracker;
         (
-            defendingFleetTracker[0], 
-            defendingFleetTracker[1], 
-            defendingFleetTracker[2]
+            tempTracker[3], 
+            tempTracker[4], 
+            tempTracker[5]
         ) = getCitadelFleetCount(toCitadel);
 
-        uint256[7] memory tempTracker;
         tempTracker[0] = uint256(siege[_fromCitadel].fleet.sifGattaca);
         tempTracker[1] = uint256(siege[_fromCitadel].fleet.mhrudvogThrot);
         tempTracker[2] = uint256(siege[_fromCitadel].fleet.drebentraakht);
-        tempTracker[3] = toCitadel;
-        tempTracker[4] = uint256(defendingFleetTracker[0]);
-        tempTracker[5] = uint256(defendingFleetTracker[1]);
-        tempTracker[6] = uint256(defendingFleetTracker[2]);
 
-        uint256[7] memory fleetTracker;
+        uint256 offensiveWinRatio;
+        uint256[6] memory fleetTracker;
         (
             fleetTracker[0],
             fleetTracker[1],
@@ -455,11 +445,12 @@ contract StorageV2 is Ownable {
             fleetTracker[3],
             fleetTracker[4],
             fleetTracker[5],
-            fleetTracker[6]
+            offensiveWinRatio
         ) = combatEngine.calculateDestroyedFleet(
             siege[_fromCitadel].pilot, 
             citadel[toCitadel].pilot,
-            tempTracker
+            tempTracker,
+            toCitadel
         );
 
         // update fleet count of defender
@@ -468,21 +459,16 @@ contract StorageV2 is Ownable {
         fleet[toCitadel].stationedFleet.drebentraakht -= fleetTracker[5];
 
         // return fleet and empty siege
-        console.log("blah 0", _fromCitadel);
-        console.log("blah 1", fleet[_fromCitadel].stationedFleet.sifGattaca);
-        console.log("blah 2", siege[_fromCitadel].fleet.sifGattaca);
-        console.log("blah 3", fleetTracker[0]);
-
-        fleet[_fromCitadel].stationedFleet.sifGattaca -= 
+        fleet[_fromCitadel].stationedFleet.sifGattaca += 
             (siege[_fromCitadel].fleet.sifGattaca - fleetTracker[0]);
-        fleet[_fromCitadel].stationedFleet.mhrudvogThrot -= 
+        fleet[_fromCitadel].stationedFleet.mhrudvogThrot += 
             (siege[_fromCitadel].fleet.mhrudvogThrot - fleetTracker[1]);
-        fleet[_fromCitadel].stationedFleet.drebentraakht -= 
+        fleet[_fromCitadel].stationedFleet.drebentraakht += 
             (siege[_fromCitadel].fleet.drebentraakht - fleetTracker[2]);
 
         // handle grid usurper
         if (siege[_fromCitadel].pilot != 0) {
-            if (fleetTracker[6] >= 80) {
+            if (offensiveWinRatio >= 80) {
                 if (citadel[toCitadel].marker >= 2) {
                     citadel[_fromCitadel].marker = 0;
                     citadel[toCitadel].marker = 0;
@@ -516,7 +502,7 @@ contract StorageV2 is Ownable {
         
         delete siege[_fromCitadel];
 
-        propaganda.dispatchSiegeEvent(
+        emit DispatchSiege(
             _fromCitadel,
             toCitadel,
             siege[_fromCitadel].timeSiegeHits,
@@ -625,7 +611,7 @@ contract StorageV2 is Ownable {
     function winCitadel() public {
         checkAccess();
 
-        uint i;
+        uint256 i;
         while (i < 1024) {
             delete grid[i];
             delete citadel[i];

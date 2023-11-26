@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 contract PropagandaV2 is Ownable {
     constructor() {}
@@ -54,6 +55,8 @@ contract PropagandaV2 is Ownable {
         uint256 _defensiveDrebentraakhtDestroyed
     ) public {
         require(msg.sender == accessAddressStorage, "cannot call function directly");
+
+
         emit DispatchSiege(
             _fromCitadelId, 
             _toCitadelId, 
@@ -69,3 +72,5 @@ contract PropagandaV2 is Ownable {
         );
     }
 }
+
+    

@@ -10,14 +10,13 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 chai.use(solidity);
 
-describe("citadel game v2", function () {
+describe.only("citadel game v2", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
         this.PilotNFT = await ethers.getContractFactory("PilotNFT");
         this.Drakma = await ethers.getContractFactory("Drakma");
         this.CitadelExordium = await ethers.getContractFactory("CitadelExordium");
-        this.Propaganda = await ethers.getContractFactory("PropagandaV2");
         this.SovereignCollectiveV2 = await ethers.getContractFactory("SovereignCollectiveV2");
         this.CombatEngineV2 = await ethers.getContractFactory("CombatEngineV2");
         this.StorageV2 = await ethers.getContractFactory("StorageV2");
@@ -53,9 +52,6 @@ describe("citadel game v2", function () {
       );
       await this.sovereignCollectiveV2.deployed();
 
-      this.propaganda = await this.Propaganda.deploy();
-      await this.propaganda.deployed();
-
       this.combatEngineV2 = await this.CombatEngineV2.deploy(
         this.pilotNFT.address,
         this.drakma.address
@@ -63,8 +59,7 @@ describe("citadel game v2", function () {
       await this.combatEngineV2.deployed();
 
       this.storageV2 = await this.StorageV2.deploy(
-        this.combatEngineV2.address,
-        this.propaganda.address
+        this.combatEngineV2.address
       );
       await this.storageV2.deployed();
 
@@ -74,14 +69,13 @@ describe("citadel game v2", function () {
         this.drakma.address,
         this.storageV2.address,
         this.combatEngineV2.address,
-        this.propaganda.address,
         this.sovereignCollectiveV2.address
       );
       await this.citadelGameV2.deployed();
 
-      this.storageV2.updateAccessAddress(this.citadelGameV2.address);
-      this.sovereignCollectiveV2.updateAccessAddress(this.citadelGameV2.address);
-      this.combatEngineV2.updateGameParams(
+      await this.storageV2.updateAccessAddress(this.citadelGameV2.address);
+      await this.sovereignCollectiveV2.updateAccessAddress(this.citadelGameV2.address);
+      await this.combatEngineV2.updateGameParams(
         1,
         30 * 60 * 1000,
         this.citadelGameV2.address
@@ -110,7 +104,7 @@ describe("citadel game v2", function () {
         let citadelId = 2;
         let gridId = 660;
         let capitalId = 1;
-        await this.citadelGameV2.liteGrid(citadelId, [1,2], gridId, capitalId);
+        await this.citadelGameV2.liteGrid(citadelId, [1,2,0], gridId, capitalId);
         let grid = await this.storageV2.grid(gridId);
         expect(grid.isCapital).to.equal(false);
         expect(grid.sovereignUntil).to.equal(0);
@@ -123,6 +117,7 @@ describe("citadel game v2", function () {
         expect(Number(citadel.timeLit.toString())).to.be.greaterThan(0);
         expect(citadel.unclaimedDrakma).to.equal(0);
         expect(citadel.marker).to.equal(0);
+        expect(citadel.gridId).to.equal(gridId);
         
       });
 
@@ -132,7 +127,7 @@ describe("citadel game v2", function () {
         let citadelId = 2;
         let gridId = 660;
         let capitalId = 1;
-        await this.citadelGameV2.liteGrid(citadelId, [2,3], gridId, capitalId);
+        await this.citadelGameV2.liteGrid(citadelId, [2,3,0], gridId, capitalId);
         let grid = await this.storageV2.grid(gridId);
         expect(grid.isCapital).to.equal(false);
         expect(Number(grid.sovereignUntil.toString())).to.be.greaterThan(0);
@@ -152,7 +147,7 @@ describe("citadel game v2", function () {
         [owner, addr1] = await ethers.getSigners();
 
         await expectRevert(
-          this.citadelGameV2.connect(addr1).liteGrid(40, [1,2], 660, 1),
+          this.citadelGameV2.connect(addr1).liteGrid(40, [1,2,0], 660, 1),
           "must own citadel"
         );
       });
@@ -161,7 +156,7 @@ describe("citadel game v2", function () {
         [owner, addr1] = await ethers.getSigners();
 
         await expectRevert(
-          this.citadelGameV2.liteGrid(40, [1,2], 660, 8),
+          this.citadelGameV2.liteGrid(40, [1,2,0], 660, 8),
           "invalid capital"
         );
       });
@@ -173,7 +168,7 @@ describe("citadel game v2", function () {
         await this.pilotNFT.transferFrom(owner.address, addr1.address, 1);
 
         await expectRevert(
-          this.citadelGameV2.connect(addr1).liteGrid(40, [1,2], 512, 1),
+          this.citadelGameV2.connect(addr1).liteGrid(40, [1,2,0], 512, 1),
           "must own pilot to lite"
         );
       });
@@ -182,7 +177,7 @@ describe("citadel game v2", function () {
         [owner, addr1] = await ethers.getSigners();
 
         await expectRevert(
-          this.citadelGameV2.liteGrid(40, [1,2], 5000, 1),
+          this.citadelGameV2.liteGrid(40, [1,2,0], 5000, 1),
           "invalid grid"
         );
       });
@@ -190,10 +185,10 @@ describe("citadel game v2", function () {
       it("reverts stake to lit grid", async function () {
         [owner, addr1] = await ethers.getSigners();
 
-        await this.citadelGameV2.liteGrid(40, [1,2], 512, 1);
+        await this.citadelGameV2.liteGrid(40, [1,2,0], 512, 1);
 
         await expectRevert(
-          this.citadelGameV2.liteGrid(41, [], 512, 1),
+          this.citadelGameV2.liteGrid(41, [0,0,0], 512, 1),
           "cannot lite"
         );
       });
@@ -209,7 +204,7 @@ describe("citadel game v2", function () {
 
       it("reverts claim of unowned citadel", async function () {
         [owner, addr1] = await ethers.getSigners();
-        await this.citadelGameV2.liteGrid(40, [1,2], 512, 1);
+        await this.citadelGameV2.liteGrid(40, [1,2,0], 512, 1);
         await expectRevert(
           this.citadelGameV2.connect(addr1).claim(40),
           "must own citadel"
@@ -230,7 +225,7 @@ describe("citadel game v2", function () {
       it("reverts second claim inside interval", async function () {
         [owner, addr1] = await ethers.getSigners();
 
-        await this.citadelGameV2.liteGrid(40, [], 512, 1);
+        await this.citadelGameV2.liteGrid(40, [0,0,0], 512, 1);
         await this.citadelGameV2.claim(40);
 
         drakmaOwner = await this.drakma.balanceOf(owner.address);
@@ -245,13 +240,13 @@ describe("citadel game v2", function () {
 
     });
 
-    describe.only("raiding", function () {
+    describe("siege", function () {
       beforeEach(async function () {
         [owner, addr1] = await ethers.getSigners();
         await this.pilotNFT.reservePILOT(256);
         await this.citadelNFT.reserveCitadel(1024);
 
-        await this.citadelGameV2.liteGrid(40, [1], 628, 1);
+        await this.citadelGameV2.liteGrid(40, [1,0,0], 628, 1);
         await this.drakma.mintDrakma(owner.address, "20000000000000000000");
         await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000");
         await this.citadelGameV2.trainFleet(40, 1, 0, 0);
@@ -264,17 +259,91 @@ describe("citadel game v2", function () {
         await this.citadelNFT.transferFrom(owner.address, addr1.address, 1023);
         await this.pilotNFT.transferFrom(owner.address, addr1.address, 3);
         await this.pilotNFT.transferFrom(owner.address, addr1.address, 4);
-        await this.citadelGameV2.connect(addr1).liteGrid(1023, [3,4], 629, 2);
+        await this.citadelGameV2.connect(addr1).liteGrid(1023, [3,4,0], 629, 2);
         await this.drakma.mintDrakma(owner.address, "20000000000000000000");
         await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000");
-        await this.citadelGameV2.trainFleet(1023, 1, 0, 0);
 
       });
 
-      it("sends direct neighbor raid from 40 to 1023", async function () {
+      it("siege with pilot, achieves marker", async function () {
         [owner, addr1] = await ethers.getSigners();
+        let pilotId = 1;
+        await this.citadelGameV2.sendSiege(40, 1023, pilotId, [100,0,0]);
+        
+        let citadel40 = await this.storageV2.citadel(40);
+        expect(citadel40.capitalId).to.equal(1);
+        expect(citadel40.timeOfLastClaim).to.equal(0);
+        expect(Number(citadel40.timeLit.toString())).to.be.greaterThan(0);
+        expect(Number(citadel40.unclaimedDrakma.toString())).be.greaterThan(0);
+        expect(citadel40.marker).to.equal(0);
 
-        await this.citadelGameV2.sendSiege(40, 1023, 1, [100,0,0]);
+        let citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(1);
+      });
+
+      it("siege with pilot, no marker", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await this.citadelGameV2.trainFleet(1023, 1, 0, 0);
+        let pilotId = 1;
+        await this.citadelGameV2.sendSiege(40, 1023, pilotId, [100,0,0]);
+        
+        let citadel40 = await this.storageV2.citadel(40);
+        expect(citadel40.marker).to.equal(0);
+
+        let citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(0);
+      });
+
+      it("sieges with pilot, consecutive siege reverted", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        
+        let pilotId = 1;
+        await this.citadelGameV2.sendSiege(40, 1023, pilotId, [100,0,0]);
+        
+        let citadel40 = await this.storageV2.citadel(40);
+        expect(citadel40.marker).to.equal(0);
+
+        let citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(1);
+
+        await expectRevert(
+          this.citadelGameV2.sendSiege(40, 1023, pilotId, [100,0,0]),
+          "cannot siege"
+        );
+
+      });
+
+      it("overthrows grid with 3 successful sieges", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        
+        let pilotId = 1;
+        await this.citadelGameV2.sendSiege(40, 1023, pilotId, [100,0,0]);
+        
+        let citadel40 = await this.storageV2.citadel(40);
+        expect(citadel40.marker).to.equal(0);
+        expect(citadel40.gridId).to.equal(628);
+
+        let citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(1);
+        expect(citadel1023.gridId).to.equal(629);
+
+        await time.increase(86400); // 1-day
+        
+        await this.citadelGameV2.sendSiege(40, 1023, pilotId, [100,0,0]);
+        citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(2);
+        expect(citadel1023.gridId).to.equal(629);
+
+        await time.increase(86400); // 1-day
+        
+        await this.citadelGameV2.sendSiege(40, 1023, pilotId, [100,0,0]);
+        citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(0);
+        expect(citadel1023.gridId).to.equal(628);
+
+        citadel40 = await this.storageV2.citadel(40);
+        expect(citadel40.marker).to.equal(0);
+        expect(citadel40.gridId).to.equal(629);
 
       });
 
