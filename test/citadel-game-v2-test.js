@@ -251,7 +251,7 @@ describe.only("citadel game v2", function () {
         await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000");
         await this.citadelGameV2.trainFleet(40, 1, 0, 0);
 
-        await this.citadelGameV2.liteGrid(1021, [2,5,6], 272, 1);
+        await this.citadelGameV2.liteGrid(1021, [2,5,6], 272, 3);
         await this.drakma.mintDrakma(owner.address, "20000000000000000000");
         await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000");
         await this.citadelGameV2.trainFleet(1021, 1, 0, 0);
@@ -281,7 +281,7 @@ describe.only("citadel game v2", function () {
         expect(citadel1023.marker).to.equal(1);
       });
 
-      it("siege with pilot, no marker", async function () {
+      it("siege with pilot defeated", async function () {
         [owner, addr1] = await ethers.getSigners();
         await this.citadelGameV2.trainFleet(1023, 1, 0, 0);
         let pilotId = 1;
@@ -347,7 +347,114 @@ describe.only("citadel game v2", function () {
 
       });
 
+      it("sieges with unowned citadel reverted", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        
+        await expectRevert(
+          this.citadelGameV2.sendSiege(1023, 40, 0, [100,0,0]),
+          "cannot siege"
+        );
+      });
+
+      it("siege without pilot", async function () {
+        [owner, addr1] = await ethers.getSigners();
+
+        await this.citadelGameV2.sendSiege(40, 1023, 0, [100,0,0]);
+        
+        citadel40 = await this.storageV2.citadel(40);
+
+        let citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(0);
+        expect(Number(citadel1023.timeLastSieged.toString())).to.be.greaterThan(0);
+      });
+
+      it("distant siege without pilot", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        let fleet40 = await this.storageV2.fleet(40);
+        expect(fleet40.stationedFleet.sifGattaca).to.equal(100);
+        expect(fleet40.trainingFleet.sifGattaca).to.equal(1);
+
+        await this.citadelGameV2.sendSiege(40, 1021, 0, [100,0,0]);
+
+        fleet40 = await this.storageV2.fleet(40);
+        expect(fleet40.stationedFleet.sifGattaca).to.equal(0);
+        expect(fleet40.trainingFleet.sifGattaca).to.equal(1);
+
+        let citadel1021 = await this.storageV2.citadel(1021);
+        expect(citadel1021.marker).to.equal(0);
+        expect(Number(citadel1021.timeLastSieged.toString())).to.equal(0);
+      });
+
     });
+
+    describe("sacking the capital", function () {
+
+      beforeEach(async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
+
+        await this.citadelGameV2.liteGrid(40, [1,0,0], 302, 1);
+        await this.drakma.mintDrakma(owner.address, "20000000000000000000000000");
+        await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000000000");
+        await this.citadelGameV2.trainFleet(40, 100, 100, 100);
+
+        await this.citadelGameV2.liteGrid(1021, [2,5,6], 304, 1);
+        await this.drakma.mintDrakma(owner.address, "20000000000000000000000000");
+        await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000000000");
+        await this.citadelGameV2.trainFleet(1021, 100, 100, 100);
+
+        await this.citadelNFT.transferFrom(owner.address, addr1.address, 1023);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 3);
+        await this.pilotNFT.transferFrom(owner.address, addr1.address, 4);
+        await this.citadelGameV2.connect(addr1).liteGrid(1023, [3,4,0], 303, 3);
+        await this.drakma.mintDrakma(addr1.address, "20000000000000000000");
+        await this.drakma.connect(addr1).approve(this.citadelGameV2.address, "20000000000000000000");
+
+      });
+
+      it("sacks the network state", async function () {
+        [owner, addr1] = await ethers.getSigners();
+        
+        await this.citadelGameV2.sendSiege(40, 1023, 1, [100,0,0]);
+
+        let citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(1);
+        expect(citadel1023.gridId).to.equal(303);
+
+        await time.increase(86400); // 1-day
+        
+        await this.citadelGameV2.sendSiege(1021, 1023, 2, [100,0,0]);
+        citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(2);
+        expect(citadel1023.gridId).to.equal(303);
+
+        await time.increase(86400); // 1-day
+        
+        await this.citadelGameV2.sendSiege(40, 1023, 1, [100,0,0]);
+        citadel1023 = await this.storageV2.citadel(1023);
+        expect(citadel1023.marker).to.equal(0);
+        expect(citadel1023.gridId).to.equal(302);
+
+        citadel40 = await this.storageV2.citadel(40);
+        expect(citadel40.marker).to.equal(0);
+        expect(citadel40.gridId).to.equal(303);
+
+        var ownerBalance = await this.drakma.balanceOf(owner.address);
+        
+        await time.increase(604800); // 7-days
+        await this.citadelGameV2.sackCapital(
+          40,
+          3, 
+          1000, 
+          "azprime"
+        );
+
+        ownerBalance = await this.drakma.balanceOf(owner.address);
+
+      });
+
+  });
 
     describe("reinforcements", function () {
 

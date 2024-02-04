@@ -117,7 +117,7 @@ contract StorageV2 is Ownable {
 
     // mappings
     mapping(uint256 => CitadelGrid) public citadel; // index is _citadelId
-    mapping(uint256 => FleetAcademy) fleet; // index is _citadelId
+    mapping(uint256 => FleetAcademy) public fleet; // index is _citadelId
     mapping(uint256 => Siege) siege; // index is _fromCitadelId
     mapping(uint256 => FleetReinforce) reinforcements; // index is _fromCitadelId
     mapping(uint256 => bool) pilot; // index is _pilotId, value isLit
@@ -171,12 +171,6 @@ contract StorageV2 is Ownable {
     function initGame() internal {
         gameStart = block.timestamp;
 
-        // init capital cities
-        grid[495] = Grid(true, 0, true, 63); //ANNEXATION
-        grid[661] = Grid(true, 0, true, 62); //AUTONOMOUS ZONE
-        grid[303] = Grid(true, 0, true, 61); //SANCTION
-        grid[495] = Grid(true, 0, true, 60); //NETWORK STATE
-
         capital[0] = Capital(495, 0, 100000000000000000000000, "ANNEXATION", 0); //ANNEXATION CAPITAL TREASURY
         capital[1] = Capital(615, 0, 100000000000000000000000, "AUTONOMOUS ZONE", 0); //AUTONOMOUS ZONE CAPITAL TREASURY
         capital[2] = Capital(661, 0, 100000000000000000000000, "SANCTION", 0); //SANCTION CAPITAL TREASURY
@@ -193,7 +187,6 @@ contract StorageV2 is Ownable {
     ) public {
         checkAccess();
         require(!grid[_gridId].isLit, "cannot lite");
-        require(!grid[_gridId].isCapital, "cannot lite");
         require(citadel[_citadelId].timeLit == 0, "cannot lite");
 
         for (uint256 i; i < _pilotIds.length; ++i) {
@@ -289,7 +282,7 @@ contract StorageV2 is Ownable {
         }
 
         fleet[_citadelId].trainingStarted = block.timestamp;
-        fleet[_citadelId].trainingDone = combatEngine.calculateTrainingTime(_sifGattaca, _mhrudvogThrot, _drebentraakht);
+        fleet[_citadelId].trainingDone = block.timestamp + combatEngine.calculateTrainingTime(_sifGattaca, _mhrudvogThrot, _drebentraakht);
         fleet[_citadelId].trainingFleet.sifGattaca = _sifGattaca;
         fleet[_citadelId].trainingFleet.mhrudvogThrot = _mhrudvogThrot;
         fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
@@ -597,7 +590,7 @@ contract StorageV2 is Ownable {
     function sackCapital(uint256 _citadelId, uint8 _capitalId, uint256 bribeAmt, string calldata name) public returns (uint256) {
         checkAccess();
         require(citadel[_citadelId].gridId == capital[_capitalId].gridId, "cannot sack");
-        require(capital[_capitalId].lastSack > block.timestamp + 60 days, "cannot sack");
+        require(capital[_capitalId].lastSack <= block.timestamp + 8 days, "cannot sack");
         capital[_capitalId].bribeAmt = bribeAmt;
         capital[_capitalId].name = name;
 

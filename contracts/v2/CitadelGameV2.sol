@@ -152,7 +152,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
         uint256 _pilotId, 
         uint256[3] calldata _fleet
     ) external nonReentrant {
-        require(_fromCitadel != _toCitadel && _pilotId != 0, "cannot siege");
+        require(_fromCitadel != _toCitadel);
         require(
             citadelCollection.ownerOf(_fromCitadel) == msg.sender,
             "cannot siege"
@@ -228,6 +228,7 @@ contract CitadelGameV2 is Ownable, ReentrancyGuard {
             "invalid capital"
         );
         uint256 treasuryAmt = storageEngine.sackCapital(_citadelId, _capitalId, bribeAmt, name);
+        console.log("treasury", treasuryAmt);
         if (treasuryAmt > 0) {
             require(drakma.transferFrom(address(this), msg.sender, treasuryAmt));
         }
