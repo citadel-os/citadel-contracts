@@ -38,16 +38,16 @@ async function main() {
   // );
   // console.log("fleet engine deployed to address:", storageV2.address);
 
-  const CitadelGameV2 = await ethers.getContractFactory("CitadelGameV2");
-  const citadelGameV2 = await CitadelGameV2.deploy(
-    CITADEL_NFT,
-    PILOT_NFT,
-    DRAKMA_ADDRESS,
-    CITADEL_STORAGEV2,
-    CITADEL_COMBATENGINEV2,
-    CITADEL_SOVEREIGN_COLLECTIVEV2
-  );
-  console.log("citadel game contract deployed to address:", citadelGameV2.address);
+  // const CitadelGameV2 = await ethers.getContractFactory("CitadelGameV2");
+  // const citadelGameV2 = await CitadelGameV2.deploy(
+  //   CITADEL_NFT,
+  //   PILOT_NFT,
+  //   DRAKMA_ADDRESS,
+  //   CITADEL_STORAGEV2,
+  //   CITADEL_COMBATENGINEV2,
+  //   CITADEL_SOVEREIGN_COLLECTIVEV2
+  // );
+  // console.log("citadel game contract deployed to address:", citadelGameV2.address);
 
 }
 

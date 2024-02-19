@@ -10,7 +10,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 chai.use(solidity);
 
-describe.only("citadel game v2", function () {
+describe("citadel game v2", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
@@ -459,10 +459,53 @@ describe.only("citadel game v2", function () {
     describe("reinforcements", function () {
 
         beforeEach(async function () {
-            [owner, addr1] = await ethers.getSigners();
-            await this.pilotNFT.reservePILOT(256);
-            await this.citadelNFT.reserveCitadel(1024);
+          [owner, addr1] = await ethers.getSigners();
+          await this.pilotNFT.reservePILOT(256);
+          await this.citadelNFT.reserveCitadel(1024);
+  
+          await this.citadelGameV2.liteGrid(622, [1,0,0], 302, 1);
+          await this.drakma.mintDrakma(owner.address, "20000000000000000000000000");
+          await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000000000");
+          await this.citadelGameV2.trainFleet(622, 100, 100, 100);
+  
+          await this.citadelGameV2.liteGrid(623, [2,5,6], 304, 1);
+          await this.drakma.mintDrakma(owner.address, "20000000000000000000000000");
+          await this.drakma.approve(this.citadelGameV2.address, "20000000000000000000000000");
+          await this.citadelGameV2.trainFleet(623, 100, 100, 100);
+  
+          await this.citadelNFT.transferFrom(owner.address, addr1.address, 1023);
+          await this.pilotNFT.transferFrom(owner.address, addr1.address, 3);
+          await this.pilotNFT.transferFrom(owner.address, addr1.address, 4);
+          await this.citadelGameV2.connect(addr1).liteGrid(1023, [3,4,0], 303, 3);
+          await this.drakma.mintDrakma(addr1.address, "20000000000000000000");
+          await this.drakma.connect(addr1).approve(this.citadelGameV2.address, "20000000000000000000");
 
+        });
+
+        it.only("sends direct neighbor reinforcements from 622 to 623", async function () {
+          [owner, addr1] = await ethers.getSigners();
+  
+          let fleet = [100, 0, 0];
+          await this.citadelGameV2.sendReinforcements(622, 623, fleet);
+  
+          [
+            sifGattaca622,
+            mhrudvogThrot622,
+            drebentraakht622
+          ] = await this.storageV2.getCitadelFleetCount(622);
+          expect(Number(sifGattaca622.toString())).to.equal(0);
+          expect(Number(mhrudvogThrot622.toString())).to.equal(0);
+          expect(Number(drebentraakht622.toString())).to.equal(0);
+  
+          [
+            sifGattaca623,
+            mhrudvogThrot623,
+            drebentraakht623
+          ] = await this.storageV2.getCitadelFleetCount(623);
+          expect(Number(sifGattaca623.toString())).to.equal(200);
+          expect(Number(mhrudvogThrot623.toString())).to.equal(0);
+          expect(Number(drebentraakht623.toString())).to.equal(0);
+  
         });
 
 
