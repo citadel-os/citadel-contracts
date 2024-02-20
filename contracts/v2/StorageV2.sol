@@ -151,24 +151,6 @@ contract StorageV2 is Ownable {
         ICOMBATENGINE _combatEngine
     ) {
         combatEngine = _combatEngine;
-        initGame();
-    }
-
-    function resetGame() public {
-        checkAccess();
-        for (uint256 i = 0; i < 1024; ++i) {
-            delete citadel[i];
-            delete fleet[i];
-            delete siege[i];
-            delete reinforcements[i];
-            delete pilot[i];
-            delete pilot[i+1024];
-            delete grid[i];
-        }
-        initGame();
-    }
-
-    function initGame() internal {
         gameStart = block.timestamp;
 
         capital[0] = Capital(495, 0, 100000000000000000000000, "ANNEXATION", 0); //ANNEXATION CAPITAL TREASURY
@@ -599,22 +581,6 @@ contract StorageV2 is Ownable {
 
     function checkAccess() internal view {
         require(msg.sender == accessAddress, "cannot call function directly");
-    }
-
-    function winCitadel() public {
-        checkAccess();
-
-        uint256 i;
-        while (i < 1024) {
-            delete grid[i];
-            delete citadel[i];
-            delete fleet[i];
-            delete siege[i];
-            delete reinforcements[i];
-            delete pilot[i];
-            delete pilot[2047 - i];
-            i++;
-        }
     }
 
     function getCitadelFleetCount(uint256 _citadelId) public view returns (

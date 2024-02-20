@@ -565,11 +565,44 @@ describe("citadel game v2", function () {
         "cannot reinforce"
       );
     });
+  });
+
+  describe.only("wins citadel", function () {
+
+    beforeEach(async function () {
+        [owner, addr1] = await ethers.getSigners();
+        await this.pilotNFT.reservePILOT(256);
+        await this.citadelNFT.reserveCitadel(1024);
+
+    });
+
+    it("wins citadel", async function () {
+      [owner, addr1] = await ethers.getSigners();
+
+      await this.citadelGameV2.winCitadel();
+
+
+    });
+
+    it("fails to win citadel", async function () {
+      [owner, addr1] = await ethers.getSigners();
+
+      await this.citadelNFT.transferFrom(owner.address, addr1.address, 495);
+      await this.pilotNFT.transferFrom(owner.address, addr1.address, 1);
+      await this.citadelGameV2.connect(addr1).liteGrid(495, [1,0,0], 495, 1);
+
+      await expectRevert(
+        this.citadelGameV2.winCitadel(),
+        "must own citadel"
+      );
+
+
+    });
 
 
   });
 
-  describe.only("admin", function () {
+  describe("admin", function () {
 
     beforeEach(async function () {
         [owner, addr1] = await ethers.getSigners();
