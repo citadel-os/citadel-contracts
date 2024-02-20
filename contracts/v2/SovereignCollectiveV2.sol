@@ -32,10 +32,10 @@ contract SovereignCollectiveV2 is Ownable {
         collective[_sovereignId] = Sovereign(true, _capitalId, block.timestamp);
     }
 
-    function isSovereignOnLite(uint256 _sovereignId) public view returns (bool isSovereign) {
+    function isSovereignOnLite(uint256 _sovereignId) public view returns (bool) {
         if (collective[_sovereignId].lastBribe == 0) {
-            (isSovereign,,) = pilotCollection.getSovereign(_sovereignId);
-            return isSovereign;
+            (bool isSovereignPilot,,) = pilotCollection.getSovereign(_sovereignId);
+            return isSovereignPilot;
         }
         return false;
     }

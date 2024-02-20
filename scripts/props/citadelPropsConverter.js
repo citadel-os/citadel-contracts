@@ -148,6 +148,7 @@ function printCitadel() {
     console.log(weaponsStr);
     console.log(engineStr);
     console.log(shieldStr);
+    console.log(sektStr);
 }
 
 
