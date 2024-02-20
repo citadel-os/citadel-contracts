@@ -10,7 +10,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 chai.use(solidity);
 
-describe("citadel game v2", function () {
+describe.only("citadel game v2", function () {
 
     before(async function () {
         this.CitadelNFT = await ethers.getContractFactory("CitadelNFT");
@@ -567,7 +567,7 @@ describe("citadel game v2", function () {
     });
   });
 
-  describe.only("wins citadel", function () {
+  describe("wins citadel", function () {
 
     beforeEach(async function () {
         [owner, addr1] = await ethers.getSigners();
@@ -615,7 +615,7 @@ describe("citadel game v2", function () {
       [owner, addr1] = await ethers.getSigners();
 
       await expectRevert(
-        this.storageV2.winCitadel(),
+        this.storageV2.resolveSiege(661),
         "cannot call function directly"
       );
     });
