@@ -617,22 +617,7 @@ contract StorageV2 is Ownable {
         }
     }
 
-
-    function getCitadelFleetCount(uint256 _citadelId) public view returns (uint256, uint256, uint256) {
-        (
-            uint256 sifGattaca, 
-            uint256 mhrudvogThrot, 
-            uint256 drebentraakht
-        ) = getTrainedFleet(_citadelId);
-
-        return (
-            sifGattaca + fleet[_citadelId].stationedFleet.sifGattaca,
-            mhrudvogThrot + fleet[_citadelId].stationedFleet.mhrudvogThrot,
-            drebentraakht + fleet[_citadelId].stationedFleet.drebentraakht
-        );
-    }
-
-    function getTrainedFleet(uint256 _citadelId) public view returns (
+    function getCitadelFleetCount(uint256 _citadelId) public view returns (
         uint256, uint256, uint256
     ) {
         uint256[3] memory fleetArr;

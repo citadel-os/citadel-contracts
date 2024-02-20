@@ -456,7 +456,7 @@ describe("citadel game v2", function () {
 
   });
 
-    describe("reinforcements", function () {
+    describe.only("reinforcements", function () {
 
         beforeEach(async function () {
           [owner, addr1] = await ethers.getSigners();
@@ -482,7 +482,7 @@ describe("citadel game v2", function () {
 
         });
 
-        it.only("sends direct neighbor reinforcements from 622 to 623", async function () {
+        it("sends direct neighbor reinforcements from 622 to 623", async function () {
           [owner, addr1] = await ethers.getSigners();
   
           let fleet = [100, 0, 0];
@@ -502,10 +502,68 @@ describe("citadel game v2", function () {
             mhrudvogThrot623,
             drebentraakht623
           ] = await this.storageV2.getCitadelFleetCount(623);
-          expect(Number(sifGattaca623.toString())).to.equal(200);
+          expect(Number(sifGattaca623.toString())).to.equal(100);
           expect(Number(mhrudvogThrot623.toString())).to.equal(0);
           expect(Number(drebentraakht623.toString())).to.equal(0);
   
+        });
+
+        it("sends distant reinforcments from 622 to 1023", async function () {
+          [owner, addr1] = await ethers.getSigners();
+  
+          let fleet = [100, 0, 0];
+          await this.citadelGameV2.sendReinforcements(622, 1023, fleet);
+  
+          [
+            sifGattaca1023,
+            mhrudvogThrot1023,
+            drebentraakht1023
+          ] = await this.storageV2.getCitadelFleetCount(1023);
+          expect(Number(sifGattaca1023.toString())).to.equal(0);
+          expect(Number(mhrudvogThrot1023.toString())).to.equal(0);
+          expect(Number(drebentraakht1023.toString())).to.equal(0);
+  
+          [
+            sifGattaca622,
+            mhrudvogThrot622,
+            drebentraakht622
+          ] = await this.storageV2.getCitadelFleetCount(622);
+          expect(Number(sifGattaca622.toString())).to.equal(0);
+          expect(Number(mhrudvogThrot622.toString())).to.equal(0);
+          expect(Number(drebentraakht622.toString())).to.equal(0);
+  
+        });
+  
+        it("reverts reinforcements from unowned citadel", async function () {
+          [owner, addr1] = await ethers.getSigners();
+
+          let fleet = [100, 0, 0];
+          await expectRevert(
+            this.citadelGameV2.sendReinforcements(1023, 40, fleet),
+            "must own citadel"
+          );
+        });
+
+        it("reverts reinforcements with too many fleet sent", async function () {
+          [owner, addr1] = await ethers.getSigners();
+
+          let fleet = [200, 0, 0];
+          await expectRevert(
+            this.citadelGameV2.sendReinforcements(622, 623, fleet),
+            "cannot send more fleet than in citadel"
+          );
+        });
+  
+        it("reverts multiple reinforcements in flight", async function () {
+          [owner, addr1] = await ethers.getSigners();
+  
+          let fleet = [10, 0, 0];
+          await this.citadelGameV2.sendReinforcements(622, 1023, fleet);
+  
+          await expectRevert(
+            this.citadelGameV2.sendReinforcements(622, 1023, fleet),
+            "cannot reinforce"
+          );
         });
 
 
