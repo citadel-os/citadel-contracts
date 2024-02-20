@@ -206,7 +206,7 @@ contract CombatEngineV2 is Ownable {
         uint256 _gridId, 
         uint256 lastClaimTime
     ) public view returns (uint256) {
-        uint256 baseMiningRatePerHour = drakma.balanceOf(treasuryAddress) / 53084160; // 4 games, 18 months per game, 1024 CITADEL 
+        uint256 baseMiningRatePerHour = drakma.balanceOf(treasuryAddress) / 100000000;
         uint256 miningMultiple = calculateMiningMultiple(_citadelId, engineProp[_citadelId], shieldProp[_citadelId]);
         return (
             ((block.timestamp - lastClaimTime) *
@@ -216,7 +216,6 @@ contract CombatEngineV2 is Ownable {
     }
 
     function isTreasuryMaxed(uint256 treasuryBal) public view returns (bool) {
-        //treasuryBal / (4 games * 4 capitals)
         uint256 max = drakma.balanceOf(treasuryAddress) / 16;
         if (treasuryBal > max) {
             return true;
