@@ -614,12 +614,24 @@ contract StorageV2 is Ownable {
         return miningStartTime;
     }
 
-    function getCapital(uint8 _capitalId) public view returns (uint256, uint256, uint256, uint256) {
+    function getSiege(uint256 _fromCitadelId) public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
         return (
-            capital[_capitalId].gridId, 
-            capital[_capitalId].treasury, 
-            capital[_capitalId].bribeAmt,
-            grid[capital[_capitalId].gridId].citadelId
+                siege[_fromCitadelId].toCitadel,
+                siege[_fromCitadelId].fleet.sifGattaca,
+                siege[_fromCitadelId].fleet.mhrudvogThrot,
+                siege[_fromCitadelId].fleet.drebentraakht,
+                siege[_fromCitadelId].pilot,
+                siege[_fromCitadelId].timeSiegeHits
+        );
+    }
+
+    function getCapital(uint8 _capitalId) external view returns (uint256, uint256, uint256, string memory, uint256) {
+        return (
+                capital[_capitalId].gridId,
+                capital[_capitalId].treasury,
+                capital[_capitalId].bribeAmt,
+                capital[_capitalId].name,
+                grid[capital[_capitalId].gridId].citadelId
         );
     }
 
