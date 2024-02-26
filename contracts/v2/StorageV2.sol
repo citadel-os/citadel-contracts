@@ -116,12 +116,12 @@ contract StorageV2 is Ownable {
     }
 
     // mappings
-    mapping(uint256 => CitadelGrid) public citadel; // index is _citadelId
-    mapping(uint256 => FleetAcademy) public fleet; // index is _citadelId
+    mapping(uint256 => CitadelGrid) citadel; // index is _citadelId
+    mapping(uint256 => FleetAcademy) fleet; // index is _citadelId
     mapping(uint256 => Siege) siege; // index is _fromCitadelId
     mapping(uint256 => FleetReinforce) reinforcements; // index is _fromCitadelId
     mapping(uint256 => bool) pilot; // index is _pilotId, value isLit
-    mapping(uint256 => Grid) public grid;
+    mapping(uint256 => Grid) grid;
     mapping(uint8 => Capital) capital;
 
     //variables
@@ -623,6 +623,22 @@ contract StorageV2 is Ownable {
                 siege[_fromCitadelId].pilot,
                 siege[_fromCitadelId].timeSiegeHits
         );
+    }
+
+    function getCitadel(uint256 _citadelId) public view returns (uint256, uint8, uint256, uint256, uint256, uint256, uint8) {
+        return (
+                citadel[_citadelId].gridId,
+                citadel[_citadelId].capitalId,
+                citadel[_citadelId].timeOfLastClaim,
+                citadel[_citadelId].timeLit,
+                citadel[_citadelId].timeLastSieged,
+                citadel[_citadelId].unclaimedDrakma,
+                citadel[_citadelId].marker
+        );
+    }
+
+    function getCitadelPilot(uint256 _citadelId) public view returns( uint256[3] memory){
+        return citadel[_citadelId].pilot;
     }
 
     function getCapital(uint8 _capitalId) external view returns (uint256, uint256, uint256, string memory, uint256) {
