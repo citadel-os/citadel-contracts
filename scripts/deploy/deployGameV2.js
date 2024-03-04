@@ -8,6 +8,8 @@ const CITADEL_SOVEREIGN_COLLECTIVEV2 = process.env.CITADEL_SOVEREIGN_COLLECTIVEV
 const CITADEL_COMBATENGINEV2 = process.env.CITADEL_COMBATENGINEV2;
 const CITADEL_STORAGEV2 = process.env.CITADEL_STORAGEV2;
 
+//npx hardhat run scripts/deploy/deployGameV2.js --network sepolia
+
 async function main() {
   const [deployer] = await ethers.getSigners();
 
@@ -36,7 +38,7 @@ async function main() {
   // const storageV2 = await StorageV2.deploy(
   //   CITADEL_COMBATENGINEV2
   // );
-  // console.log("fleet engine deployed to address:", storageV2.address);
+  // console.log("storage contract deployed to address:", storageV2.address);
 
   // const CitadelGameV2 = await ethers.getContractFactory("CitadelGameV2");
   // const citadelGameV2 = await CitadelGameV2.deploy(

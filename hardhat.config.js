@@ -43,7 +43,7 @@ module.exports = {
       url: API_URL,
       accounts: [`0x${PRIVATE_KEY}`],
       gas: "auto",
-      gasMultiplier: 1
+      gasMultiplier: 5
     },
     arbitrumgoerli: {
       url: API_URL,
