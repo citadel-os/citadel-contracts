@@ -3,36 +3,30 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
 const CITADEL_NFT = process.env.CITADEL_NFT;
 const PILOT_NFT = process.env.PILOT_NFT;
-const CITADEL_GAMEV1 = process.env.CITADEL_GAMEV1;
-const CITADEL_FLEETV1 = process.env.CITADEL_FLEETV1;
+const CITADEL_GAMEV2 = process.env.CITADEL_GAMEV2;
+const CITADEL_STORAGEV2 = process.env.CITADEL_STORAGEV2;
+const DRAKMA_ADDRESS = process.env.DRAKMA_ADDRESS;
 
-const CITADELID = 998;
+//npx hardhat run scripts/game/train.js --network sepolia
+const CITADELID = 1022;
 
 async function main() {
-    const FleetV1 = await ethers.getContractFactory("CitadelFleetV1");
-    const fleetV1 = await FleetV1.attach(CITADEL_FLEETV1);
+    
+    const GameV2 = await ethers.getContractFactory("CitadelGameV2");
+    const gameV2 = await GameV2.attach(CITADEL_GAMEV2);
 
-    // fleetTraining = await gameV1.getCitadelFleetCountTraining(CITADELID);
+    const StorageV2 = await ethers.getContractFactory("StorageV2");
+    const storageV2 = await StorageV2.attach(CITADEL_STORAGEV2);
+
+    const Drakma = await ethers.getContractFactory("Drakma");
+    const drakma = await Drakma.attach(DRAKMA_ADDRESS);
+
+    //await drakma.approve(CITADEL_GAMEV2, "2048000000000000000000000");
+
+    await gameV2.trainFleet(CITADELID, 2, 2, 1);
+
+    // let fleetTraining = await storageV2.getCitadelFleetCount(CITADELID);
     // console.log(fleetTraining);
-
-
-    // fleetInCitadel = await gameV1.getCitadelFleetCount(CITADELID);
-    // console.log(fleetInCitadel);
-
-    // let fleetTraining = await fleetV1.getFleetInTraining(CITADELID);
-    // console.log(fleetTraining);
-    // let res = await fleetV1.resolveTraining(CITADELID);
-    // console.log(res);
-
-    //uint256 _citadelId, int256 _sifGattaca, int256 _mhrudvogThrot, int256 _drebentraakht
-    // let train = await fleetV1.trainFleet(3, 200, 0, 0);
-    // console.log(train);
-
-    let train = await fleetV1.getTrainedFleet(5);
-    console.log(train);
-
-    let inTraining = await fleetV1.getFleetInTraining(5);
-    console.log(inTraining);
 
 }
 

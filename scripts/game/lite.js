@@ -19,26 +19,18 @@ async function main() {
     const GameV2 = await ethers.getContractFactory("CitadelGameV2");
     const gameV2 = await GameV2.attach(CITADEL_GAMEV2);
 
-    let x = await citadelNFT.ownerOf(1022);
+    let x = await citadelNFT.ownerOf(1021);
     console.log(x);
 
-    let y = await pilotNFT.ownerOf(1022);
+    let y = await pilotNFT.ownerOf(1021);
     console.log(y);
 
     await gameV2.liteGrid(
-        1022,
-        [1022,0,0],
-        1022,
+        1021,
+        [1021,0,0],
+        1021,
         2
     );
-    // uint256 _citadelId, 
-    // uint256[3] calldata _pilotIds, 
-    // uint256 _gridId, 
-    // uint8 _capitalId
-    // dimResp = await gameV1.dimGrid(CITADELID);
-    // console.log(dimResp);
-
-
 
 }
 

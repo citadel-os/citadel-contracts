@@ -9,7 +9,7 @@ require('hardhat-contract-sizer');
 
 const { API_URL, PRIVATE_KEY, ACCOUNT1_PK } = process.env;
 module.exports = {
-  solidity: "0.8.4",
+  solidity: "0.8.24",
   defaultNetwork: "localhost",
   allowUnlimitedContractSize: true,
   networks: {
