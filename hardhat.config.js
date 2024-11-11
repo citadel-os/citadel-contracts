@@ -26,9 +26,7 @@ module.exports = {
       url: API_URL,
       accounts: [`0x${PRIVATE_KEY}`],
       gas: "auto",
-      gasMultiplier: 1.5,
-      //gasLimit: 1746472,
-      //gasPrice: 12
+      gasMultiplier: 1.5
     },
     goerli: {
       url: API_URL,

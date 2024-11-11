@@ -8,9 +8,4 @@ interface IExpand {
         uint256 _mhrudvogThrot,
         uint256 _drebentraakht
     ) external;
-    function calculateTrainingCost(
-        uint256 _sifGattaca,
-        uint256 _mhrudvogThrot,
-        uint256 _drebentraakht
-    ) external returns (uint256);
 }

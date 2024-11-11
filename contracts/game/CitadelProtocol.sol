@@ -23,9 +23,8 @@ contract CitadelProtocol is DiamondStorage, Ownable {
         exploreSelectors[0] = IExplore.liteGrid.selector;
         exploreSelectors[1] = IExplore.claim.selector;
 
-        bytes4[] memory expandSelectors = new bytes4[](2);
+        bytes4[] memory expandSelectors = new bytes4[](1);
         expandSelectors[0] = IExpand.trainFleet.selector;
-        expandSelectors[1] = IExpand.calculateTrainingCost.selector;
 
         bytes4[] memory exploitSelectors = new bytes4[](4);
         exploitSelectors[0] = IExploit.sackCapital.selector;
@@ -33,16 +32,16 @@ contract CitadelProtocol is DiamondStorage, Ownable {
         exploitSelectors[2] = IExploit.overthrowSovereign.selector;
         exploitSelectors[3] = IExploit.getCapital.selector;
 
-        bytes4[] memory expterminateSelectors = new bytes4[](3);
-        expterminateSelectors[0] = IExterminate.sendReinforcements.selector;
-        expterminateSelectors[1] = IExterminate.sendSiege.selector;
-        expterminateSelectors[2] = IExterminate.resolveSiege.selector;
+        bytes4[] memory exterminateSelectors = new bytes4[](3);
+        exterminateSelectors[0] = IExterminate.sendReinforcements.selector;
+        exterminateSelectors[1] = IExterminate.sendSiege.selector;
+        exterminateSelectors[2] = IExterminate.resolveSiege.selector;
 
         DiamondLib.FacetCut[] memory fourXCuts = new DiamondLib.FacetCut[](4);
 
         fourXCuts[0] = DiamondLib.FacetCut({
-            facetAddress: expandAddress,
-            functionSelectors: expandSelectors
+            facetAddress: exploreAddress,
+            functionSelectors: exploreSelectors
         });
 
         fourXCuts[1] = DiamondLib.FacetCut({
@@ -51,13 +50,13 @@ contract CitadelProtocol is DiamondStorage, Ownable {
         });
 
         fourXCuts[2] = DiamondLib.FacetCut({
-            facetAddress: expandAddress,
-            functionSelectors: expandSelectors
+            facetAddress: exploitAddress,
+            functionSelectors: exploitSelectors
         });
 
         fourXCuts[3] = DiamondLib.FacetCut({
-            facetAddress: expandAddress,
-            functionSelectors: expandSelectors
+            facetAddress: exterminateAddress,
+            functionSelectors: exterminateSelectors
         });
 
         DiamondLib.diamondCut(fourXCuts);

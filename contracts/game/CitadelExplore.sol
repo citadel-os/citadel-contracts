@@ -6,28 +6,20 @@ import "./DiamondStorage.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-interface ICitadel {
-    function ownerOf(uint256 tokenId) external view returns (address);
-}
-
-interface IPilot {
+interface INFT {
     function ownerOf(uint256 tokenId) external view returns (address);
 }
 
 contract CitadelExplore is DiamondStorage, Ownable, IExplore, ReentrancyGuard {
-    using SafeERC20 for IERC20;
-
     IERC20 public immutable drakma;
-    ICitadel public immutable citadelCollection;
-    IPilot public immutable pilotCollection;
+    INFT public immutable citadelCollection;
+    INFT public immutable pilotCollection;
 
     constructor(
-        IPilot _pilotAddress,
-        ICitadel _citadelAddress,
+        INFT _pilotAddress,
+        INFT _citadelAddress,
         IERC20 _drakmaAddress
     ) {
         citadelCollection = _citadelAddress;
@@ -48,6 +40,7 @@ contract CitadelExplore is DiamondStorage, Ownable, IExplore, ReentrancyGuard {
             "must own citadel"
         );
         require(!DiamondStorage.grid[_gridId].isLit, "cannot lite");
+        uint256 sovereignUntil;
         for (uint256 i; i < _pilotIds.length; ++i) {
             if (_pilotIds[i] != 0) {
                 require(
@@ -73,8 +66,8 @@ contract CitadelExplore is DiamondStorage, Ownable, IExplore, ReentrancyGuard {
             0
         );
 
-        // todo get or pass sovereign until as 2nd param
-        DiamondStorage.grid[_gridId] = Grid(false, 0, true, _citadelId);
+
+        DiamondStorage.grid[_gridId] = Grid(false, sovereignUntil, true, _citadelId);
 
     }
 
