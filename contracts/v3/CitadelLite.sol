@@ -25,19 +25,19 @@ contract CitadelLite is DiamondStorage, Ownable, ILite, ReentrancyGuard {
         uint8 _factionId,
         uint8 _orbitHeight
     ) external nonReentrant {
-        require(_nodeId <= DiamondStorage.maxNode && _nodeId != 0, "invalid node");
+        require(_nodeId <= maxNode && _nodeId != 0, "invalid node");
         // TODO: check for citadel ownership
-        require(!DiamondStorage.node[_nodeId].isLit, "Node already lit");
+        require(!node[_nodeId].isLit, "Node already lit");
 
         for (uint256 i; i < _pilotIds.length; ++i) {
             if (_pilotIds[i] != 0) {
                 // TODO: check for pilot ownership
-                require(!DiamondStorage.pilot[_pilotIds[i]], "Pilot already used");
-                DiamondStorage.pilot[_pilotIds[i]] = true;
+                require(!pilot[_pilotIds[i]], "Pilot already used");
+                pilot[_pilotIds[i]] = true;
             }
         }
 
-        require(DiamondStorage.citadel[_citadelId].timeLit == 0, "Citadel already lit");
+        require(citadelNode[_citadelId].timeLit == 0, "Citadel already lit");
 
         // Transfer Drakma based on orbit height
         uint256 drakmaAmount;
@@ -62,9 +62,7 @@ contract CitadelLite is DiamondStorage, Ownable, ILite, ReentrancyGuard {
             );
         }
 
-        uint256 gridId = getGrid(_nodeId);
-
-        DiamondStorage.citadel[_citadelId] = CitadelNode(
+        citadelNode[_citadelId] = CitadelNode(
             _nodeId,
             0,
             block.timestamp,
@@ -72,11 +70,74 @@ contract CitadelLite is DiamondStorage, Ownable, ILite, ReentrancyGuard {
             0,
             _pilotIds,
             _factionId,
-            _orbitHeight
+            _orbitHeight,
+            0
         );
 
-        DiamondStorage.node[_nodeId] = Node(gridId, true, _citadelId);
+        node[_nodeId] = Node(node[_nodeId].gridId, true, _citadelId);
+    }
 
+    function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
+        uint256 trainingCost = calculateTrainingCost(_sifGattaca, _mhrudvogThrot, _drebentraakht);
+        require(drakma.transferFrom(msg.sender, address(this), trainingCost));
+
+        resolveTraining(_citadelId);
+        require(
+            fleet[_citadelId].trainingDone == 0,
+            "cannot train"
+        );
+
+            // allocate 100 sifGattaca on first train
+        if(!fleet[_citadelId].isValue) {
+            fleet[_citadelId].stationedFleet.sifGattaca = 100;
+            fleet[_citadelId].isValue = true;
+        }
+
+        fleet[_citadelId].trainingStarted = block.timestamp;
+        fleet[_citadelId].trainingDone = block.timestamp + calculateTrainingTime(_sifGattaca, _mhrudvogThrot, _drebentraakht);
+        fleet[_citadelId].trainingFleet.sifGattaca = _sifGattaca;
+        fleet[_citadelId].trainingFleet.mhrudvogThrot = _mhrudvogThrot;
+        fleet[_citadelId].trainingFleet.drebentraakht = _drebentraakht;
+
+    }
+
+    function resolveTraining(uint256 _citadelId) internal {
+        if(fleet[_citadelId].trainingDone <= block.timestamp) {
+            fleet[_citadelId].trainingDone = 0;
+            fleet[_citadelId].trainingStarted = 0;
+            fleet[_citadelId].stationedFleet.sifGattaca += fleet[_citadelId].trainingFleet.sifGattaca;
+            fleet[_citadelId].trainingFleet.sifGattaca = 0;
+            fleet[_citadelId].stationedFleet.mhrudvogThrot += fleet[_citadelId].trainingFleet.mhrudvogThrot;
+            fleet[_citadelId].trainingFleet.mhrudvogThrot = 0;
+            fleet[_citadelId].stationedFleet.drebentraakht += fleet[_citadelId].trainingFleet.drebentraakht;
+            fleet[_citadelId].trainingFleet.drebentraakht = 0;
+        }
+    }
+
+    function calculateTrainingCost(
+        uint256 _sifGattaca,
+        uint256 _mhrudvogThrot,
+        uint256 _drebentraakht
+    ) internal view returns (uint256) {
+        uint256 trainingCost = 0;
+        trainingCost += _sifGattaca * sifGattacaPrice;
+        trainingCost += _mhrudvogThrot * mhrudvogThrotPrice;
+        trainingCost += _drebentraakht * drebentraakhtPrice;
+
+        return trainingCost;
+    }
+
+    function calculateTrainingTime(
+        uint256 _sifGattaca,
+        uint256 _mhrudvogThrot,
+        uint256 _drebentraakht
+    ) internal view returns (uint256) {
+        uint256 timeTrainingDone = block.timestamp;
+        timeTrainingDone = _sifGattaca * sifGattacaTrainingTime;
+        timeTrainingDone += _mhrudvogThrot * mhrudvogThrotTrainingTime;
+        timeTrainingDone += _drebentraakht * drebentraakhtTrainingTime;
+
+        return timeTrainingDone;
     }
 
 
