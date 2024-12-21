@@ -18,10 +18,8 @@ contract CitadelProtocol is DiamondStorage, Ownable {
         bytes4[] memory liteSelectors = new bytes4[](1);
         liteSelectors[0] = ILite.liteGrid.selector;
 
-        bytes4[] memory adminSelectors = new bytes4[](2);
-        adminSelectors[0] = IAdmin.updateCitadelMerkleRoot.selector;
-        adminSelectors[1] = IAdmin.updatePilotMerkleRoot.selector;
-
+        bytes4[] memory adminSelectors = new bytes4[](1);
+        adminSelectors[0] = IAdmin.updateNFTMerkleRoot.selector;
 
         DiamondLib.FacetCut[] memory cuts = new DiamondLib.FacetCut[](2);
 

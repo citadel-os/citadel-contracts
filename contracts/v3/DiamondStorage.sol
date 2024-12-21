@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
 contract DiamondStorage {
     uint256 maxCitadel = 1024;
     uint256 maxNode = 2048;
@@ -9,19 +11,12 @@ contract DiamondStorage {
     uint8 pilotMultiple = 20;
     uint8 levelMultiple = 2;
     uint256 public gridTraversalTime = 30 minutes;
-    uint256 sifGattacaPrice = 20000000000000000000;
-    uint256 mhrudvogThrotPrice = 40000000000000000000;
-    uint256 drebentraakhtPrice = 800000000000000000000;
     uint256 sifGattacaTrainingTime = 5 minutes;
     uint256 mhrudvogThrotTrainingTime = 15 minutes;
     uint256 drebentraakhtTrainingTime = 1 hours;
-    uint256 sifGattacaCary = 10000000000000000000;
-    uint256 mhrudvogThrotCary = 2000000000000000000;
-    uint256 drebentraakhtCary = 400000000000000000000;
     uint256 siegeMaxExpiry = 24 hours;
 
-    bytes32 public pilotMerkleRoot;
-    bytes32 public citadelMerkleRoot;
+    bytes32 public nftMerkleRoot;
 
     event CitadelEvent(
         uint256 citadelId
@@ -98,6 +93,21 @@ contract DiamondStorage {
     function getGridFromNode(uint256 _nodeId) internal pure returns (uint256) {
         uint256 gridId = (_nodeId - 1) / 8 + 1;
         return gridId;
+    }
+
+    /// @notice Verify that (owner, tokenId) is part of the merkle tree
+    /// @param owner The address to verify
+    /// @param tokenId The tokenId owned by that address
+    /// @param proof The Merkle proof
+    /// @return True if verified, false otherwise
+    function verifyOwnership(
+        address owner,
+        uint256 tokenId,
+        bytes32[] calldata proof,
+        bool isCitadel
+    ) internal view returns (bool) {
+        bytes32 leaf = keccak256(abi.encodePacked(owner, tokenId, isCitadel));
+        return MerkleProof.verify(proof, nftMerkleRoot, leaf);
     }
 
     // diamond storage functionality

@@ -9,7 +9,7 @@ async function main() {
     const pilotNFT = await PilotNFT.attach(PILOT_NFT);
 
     await pilotNFT.updateBaseURI(
-      "https://gateway.pinata.cloud/ipfs/QmaPTXkQiouieq4QLgahr1UiBLpEBYqKXoBt9XG62oXwQq/"
+      "https://gateway.pinata.cloud/ipfs/bafybeihgg5vrez4nq5mmu4tvuqkvwv7sp62dglljup5azrluraeql2ytta/"
     );
 
     // await pilotNFT.reservePILOT(1024);

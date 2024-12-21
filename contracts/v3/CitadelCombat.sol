@@ -14,6 +14,9 @@ contract CitadelCombat is DiamondStorage, ReentrancyGuard {
     IERC20 public immutable drakma;
     ICombatEngine public combatEngine;
 
+    uint256 sifGattacaCary = 10000000000000000000;
+    uint256 mhrudvogThrotCary = 2000000000000000000;
+    uint256 drebentraakhtCary = 400000000000000000000;
 
     constructor(IERC20 _drakma, address _combatEngineAddress) {
         drakma = _drakma;

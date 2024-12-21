@@ -55,6 +55,18 @@ module.exports = {
       gas: "auto",
       gasMultiplier: 1.5
     },
+    base: {
+      url: API_URL,
+      accounts: [`0x${PRIVATE_KEY}`],
+      gas: 8000000,
+      gasPrice: 3000000000,
+    },
+    basesepolia: {
+      url: API_URL,
+      accounts: [`0x${PRIVATE_KEY}`],
+      gas: 8000000,
+      gasPrice: 3000000000,
+    }
   },
   etherscan: {
     apiKey: "TJGFDFSCM8PZMMHSFFMUY8BW4T3U8CJSH2"

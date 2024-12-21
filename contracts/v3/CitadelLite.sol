@@ -12,6 +12,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract CitadelLite is DiamondStorage, Ownable, ILite, ReentrancyGuard {
     IERC20 public immutable drakma;
 
+    uint256 sifGattacaPrice = 20000000000000000000;
+    uint256 mhrudvogThrotPrice = 40000000000000000000;
+    uint256 drebentraakhtPrice = 800000000000000000000;
+
     constructor(
         IERC20 _drakmaAddress
     ) {
@@ -23,15 +27,16 @@ contract CitadelLite is DiamondStorage, Ownable, ILite, ReentrancyGuard {
         uint256[3] calldata _pilotIds,
         uint256 _nodeId,
         uint8 _factionId,
-        uint8 _orbitHeight
+        uint8 _orbitHeight,
+        bytes32[] calldata proof
     ) external nonReentrant {
         require(_nodeId <= maxNode && _nodeId != 0, "invalid node");
-        // TODO: check for citadel ownership
+        require(verifyOwnership(msg.sender, _citadelId, proof, true) == true, "caller does not own citadel");
         require(!node[_nodeId].isLit, "Node already lit");
 
         for (uint256 i; i < _pilotIds.length; ++i) {
             if (_pilotIds[i] != 0) {
-                // TODO: check for pilot ownership
+                require(verifyOwnership(msg.sender, _pilotIds[i], proof, false) == true, "caller does not own pilot");
                 require(!pilot[_pilotIds[i]], "Pilot already used");
                 pilot[_pilotIds[i]] = true;
             }
