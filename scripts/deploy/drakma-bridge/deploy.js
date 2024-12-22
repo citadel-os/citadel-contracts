@@ -21,10 +21,10 @@ async function main() {
 
     const DrakmaSenderBridge = await ethers.getContractFactory("DrakmaSenderBridge");
 
-    console.log(DRAKMA_RECEIVER);
-    console.log(CCIP_ETH_ROUTER);
-    console.log(DRAKMA_TOKEN);
-    console.log(CHAIN_BASE_SELECTOR);
+    // console.log(DRAKMA_RECEIVER);
+    // console.log(CCIP_ETH_ROUTER);
+    // console.log(DRAKMA_TOKEN);
+    // console.log(CHAIN_BASE_SELECTOR);
     const drakmaSenderBridge = await DrakmaSenderBridge.deploy(
         DRAKMA_RECEIVER,
         CCIP_ETH_ROUTER,

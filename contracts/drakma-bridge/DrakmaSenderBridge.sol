@@ -8,20 +8,23 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-interface IDrakma {
-    function burn(address from, uint256 amount) external;
-}
+
 
 contract DrakmaSenderBridge is Ownable, ReentrancyGuard {
     address public baseContractAddress;
     IRouterClient public router;
-    IERC20 public drakmaToken;
+    ERC20Burnable public drakmaToken;
     uint64 public destinationChainSelector;
+
+    struct DrakmaBridge {
+        uint256 drakmaBurned;
+        address bridger;
+    }
 
     struct Message {
         uint64 sourceChainSelector;
         address sender;
-        uint256 drakmaBurned;
+        DrakmaBridge message;
     }
 
     event MessageSent(
@@ -39,12 +42,12 @@ contract DrakmaSenderBridge is Ownable, ReentrancyGuard {
     ) {
         baseContractAddress = _baseContractAddress;
         router = IRouterClient(_router);
-        drakmaToken = IERC20(_drakmaTokenAddress);
+        drakmaToken = ERC20Burnable(_drakmaTokenAddress);
         destinationChainSelector = _destinationChainSelector;
     }
 
-    function _sendMessage(
-        uint256 message
+    function sendMessage(
+        DrakmaBridge memory message
     ) internal returns (bytes32 messageId) {
         Client.EVM2AnyMessage memory evm2AnyMessage = Client.EVM2AnyMessage({
             receiver: abi.encode(baseContractAddress),
@@ -63,18 +66,23 @@ contract DrakmaSenderBridge is Ownable, ReentrancyGuard {
             evm2AnyMessage
         );
 
-        emit MessageSent(messageId, msg.sender, fees, message);
+        emit MessageSent(messageId, msg.sender, fees, message.drakmaBurned);
 
         return messageId;
     }
 
     function bridge(uint256 _amt) external nonReentrant {
-        require(_amt > 0, "Invalid amount");
-        require(drakmaToken.transferFrom(msg.sender, address(this), _amt), "Transfer failed");
+        require(_amt > 0, "invalid amount");
+        require(drakmaToken.transferFrom(msg.sender, address(this), _amt), "transfer failed");
 
-        ERC20Burnable(address(drakmaToken)).burn(_amt);
+        drakmaToken.burn(_amt);
 
-        _sendMessage(_amt);
+        DrakmaBridge memory bridgeData = DrakmaBridge({
+            drakmaBurned: _amt,
+            bridger: _msgSender()
+        });
+
+        sendMessage(bridgeData);
     }
 
     function withdrawEth() external onlyOwner {
@@ -84,3 +92,4 @@ contract DrakmaSenderBridge is Ownable, ReentrancyGuard {
 
     receive() external payable {}
 }
+

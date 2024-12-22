@@ -13,13 +13,12 @@ async function main() {
 
     var balance = await drakma.balanceOf(PUBLIC_KEY);
     console.log("wallet balance: " + balance);
-    await drakma.approve(DRAKMA_SENDER, "10000000000000000000");
+    
+    // const approveTx = await drakma.approve(DRAKMA_SENDER, "10000000000000000000");
+    // await approveTx.wait(); // Wait for confirmation
 
-    const approveTx = await drakma.approve(DRAKMA_SENDER, "10000000000000000000");
-    await approveTx.wait(); // Wait for confirmation
-
-    const allowance = await drakma.allowance(PUBLIC_KEY, DRAKMA_SENDER);
-    console.log("allowance:", allowance.toString());
+    // const allowance = await drakma.allowance(PUBLIC_KEY, DRAKMA_SENDER);
+    // console.log("allowance:", allowance.toString());
     
     const DrakmaSenderBridge = await ethers.getContractFactory("DrakmaSenderBridge");
     const drakmaSenderBridge = await DrakmaSenderBridge.attach(DRAKMA_SENDER);

@@ -12,20 +12,24 @@ interface IDrakma is IERC20 {
 }
 
 contract DrakmaReceiverBridge is CCIPReceiver, Ownable {
-
     IDrakma public drakmaToken;
     IRouterClient public router;
 
     event MessageReceived(
         bytes32 messageId,
         address sender,
-        uint256 drakmaMinted
+        uint256 drakmaBurned
     );
+
+    struct DrakmaBridge {
+        uint256 drakmaBurned;
+        address bridger;
+    }
 
     struct Message {
         uint64 sourceChainSelector;
         address sender;
-        uint256 drakmaBurned;
+        DrakmaBridge message;
     }
 
     constructor(
@@ -41,10 +45,10 @@ contract DrakmaReceiverBridge is CCIPReceiver, Ownable {
     ) internal override {
         bytes32 messageId = any2EvmMessage.messageId; // fetch the messageId
         address sender = abi.decode(any2EvmMessage.sender, (address)); // abi-decoding of the sender address
-        uint256 drakmaBridged = abi.decode(any2EvmMessage.data, (uint256));
+        DrakmaBridge memory message = abi.decode(any2EvmMessage.data, (DrakmaBridge)); // abi-decoding of the sent string message
 
-        drakmaToken.mintDrakma(sender, drakmaBridged);
-
-        emit MessageReceived(messageId, sender, drakmaBridged);
+        emit MessageReceived(messageId, sender, message.drakmaBurned);
+        drakmaToken.mintDrakma(sender, message.drakmaBurned);
     }
+
 }
