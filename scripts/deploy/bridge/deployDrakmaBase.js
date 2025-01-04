@@ -1,8 +1,8 @@
 const { ethers } = require("hardhat");
 
 
-//npx hardhat run scripts/deploy/drakma-bridge/deployDrakmaBase.js --network basesepolia
-//npx hardhat run scripts/deploy/drakma-bridge/deployDrakmaBase.js --network base
+//npx hardhat run scripts/deploy/bridge/deployDrakmaBase.js --network basesepolia
+//npx hardhat run scripts/deploy/bridge/deployDrakmaBase.js --network base
 async function main() {
     const [deployer] = await ethers.getSigners();
 

@@ -10,16 +10,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
 
-contract CitadelProtocol is DiamondStorage, Ownable {
+contract CitadelGame is DiamondStorage, Ownable {
     constructor(
         address liteAddress,
         address adminAddress
     ) {
-        bytes4[] memory liteSelectors = new bytes4[](1);
-        liteSelectors[0] = ILite.liteGrid.selector;
+        bytes4[] memory liteSelectors = new bytes4[](2);
+        liteSelectors[0] = ILite.liteCitadel.selector;
+        liteSelectors[1] = ILite.litePilot.selector;
 
-        bytes4[] memory adminSelectors = new bytes4[](1);
-        adminSelectors[0] = IAdmin.updateNFTMerkleRoot.selector;
+        bytes4[] memory adminSelectors = new bytes4[](0);
 
         DiamondLib.FacetCut[] memory cuts = new DiamondLib.FacetCut[](2);
 

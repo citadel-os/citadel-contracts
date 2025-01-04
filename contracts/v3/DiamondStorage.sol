@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract DiamondStorage {
     uint256 maxCitadel = 1024;
-    uint256 maxNode = 2048;
+    uint256 maxNode = 1024;
     uint256 claimInterval = 64 days;
     uint256 gameStart;
     uint8 pilotMultiple = 20;
@@ -16,24 +15,13 @@ contract DiamondStorage {
     uint256 drebentraakhtTrainingTime = 1 hours;
     uint256 siegeMaxExpiry = 24 hours;
 
-    bytes32 public nftMerkleRoot;
-
     event CitadelEvent(
         uint256 citadelId
     );
 
-    event DispatchSiege(
+    event CitadelActionEvent(
         uint256 fromCitadelId, 
-        uint256 toCitadelId,
-        uint256 timeSiegeHit,
-        uint256 offensiveCarryCapacity,
-        uint256 drakmaSieged,
-        uint256 offensiveSifGattacaDestroyed,
-        uint256 offensiveMhrudvogThrotDestroyed,
-        uint256 offensiveDrebentraakhtDestroyed,
-        uint256 defensiveSifGattacaDestroyed,
-        uint256 defensiveMhrudvogThrotDestroyed,
-        uint256 defensiveDrebentraakhtDestroyed
+        uint256 toCitadelId
     );
 
     struct Node {
@@ -79,6 +67,14 @@ contract DiamondStorage {
         Fleet fleet;
         uint256 pilot;
         uint256 timeSiegeHits;
+        uint256 offensiveCarryCapacity;
+        uint256 drakmaSieged;
+        uint256 offensiveSifGattacaDestroyed;
+        uint256 offensiveMhrudvogThrotDestroyed;
+        uint256 offensiveDrebentraakhtDestroyed;
+        uint256 defensiveSifGattacaDestroyed;
+        uint256 defensiveMhrudvogThrotDestroyed;
+        uint256 defensiveDrebentraakhtDestroyed;
     }
 
     mapping(uint256 => Node) node; // index is _nodeId
@@ -95,19 +91,17 @@ contract DiamondStorage {
         return gridId;
     }
 
-    /// @notice Verify that (owner, tokenId) is part of the merkle tree
-    /// @param owner The address to verify
-    /// @param tokenId The tokenId owned by that address
-    /// @param proof The Merkle proof
-    /// @return True if verified, false otherwise
-    function verifyOwnership(
-        address owner,
-        uint256 tokenId,
-        bytes32[] calldata proof,
-        bool isCitadel
-    ) internal view returns (bool) {
-        bytes32 leaf = keccak256(abi.encodePacked(owner, tokenId, isCitadel));
-        return MerkleProof.verify(proof, nftMerkleRoot, leaf);
+
+    function getNodeFromCitadel(uint256 _citadelId) internal view returns (uint256) {
+        if(citadelNode[_citadelId].timeLit == 0) {
+            if (_citadelId % 2 == 0) {
+                return _citadelId / 2;
+            } else {
+                return 1024 - (_citadelId / 2);
+            }
+        } else {
+            return citadelNode[_citadelId].nodeId;
+        }
     }
 
     // diamond storage functionality

@@ -95,7 +95,16 @@ contract CitadelCombat is DiamondStorage, ReentrancyGuard {
             Fleet(_fleet[0], 
             _fleet[1], 
             _fleet[2]), 
-            _pilotId, timeSiegeHits
+            _pilotId, 
+            timeSiegeHits,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
         );
 
         fleet[_fromCitadel].stationedFleet.sifGattaca -= _fleet[0];
@@ -161,7 +170,11 @@ contract CitadelCombat is DiamondStorage, ReentrancyGuard {
             fleet[toCitadel].stationedFleet.sifGattaca += siege[_fromCitadel].fleet.sifGattaca;
             fleet[toCitadel].stationedFleet.mhrudvogThrot += siege[_fromCitadel].fleet.mhrudvogThrot;
             fleet[toCitadel].stationedFleet.drebentraakht += siege[_fromCitadel].fleet.drebentraakht;
-            delete siege[_fromCitadel];
+
+            siege[_fromCitadel].offensiveSifGattacaDestroyed = siege[_fromCitadel].fleet.sifGattaca;
+            siege[_fromCitadel].offensiveMhrudvogThrotDestroyed = siege[_fromCitadel].fleet.mhrudvogThrot;
+            siege[_fromCitadel].offensiveDrebentraakhtDestroyed = siege[_fromCitadel].fleet.drebentraakht;
+
 
             // transfer 10% of siegeing dk to wallet who resolved
             uint256 drakmaFeeAvailable = combatEngine.calculateMiningOutput(
@@ -245,21 +258,20 @@ contract CitadelCombat is DiamondStorage, ReentrancyGuard {
         citadelNode[toCitadel].unclaimedDrakma = (drakmaAvailable - dkToTransfer);
         citadelNode[_fromCitadel].unclaimedDrakma += (dkToTransfer * 9) / 10;
         citadelNode[toCitadel].timeLastSieged = block.timestamp;
-        
-        delete siege[_fromCitadel];
 
-        emit DispatchSiege(
+        siege[_fromCitadel].offensiveCarryCapacity = drakmaCarry;
+        siege[_fromCitadel].drakmaSieged = dkToTransfer;
+
+        siege[_fromCitadel].offensiveSifGattacaDestroyed = fleetTracker[0];
+        siege[_fromCitadel].offensiveMhrudvogThrotDestroyed = fleetTracker[1];
+        siege[_fromCitadel].offensiveDrebentraakhtDestroyed = fleetTracker[2];
+        siege[_fromCitadel].defensiveSifGattacaDestroyed = fleetTracker[3];
+        siege[_fromCitadel].defensiveMhrudvogThrotDestroyed = fleetTracker[4];
+        siege[_fromCitadel].defensiveDrebentraakhtDestroyed = fleetTracker[5];
+
+        emit CitadelActionEvent(
             _fromCitadel,
-            toCitadel,
-            siege[_fromCitadel].timeSiegeHits,
-            drakmaCarry,
-            dkToTransfer,
-            fleetTracker[0],
-            fleetTracker[1],
-            fleetTracker[2],
-            fleetTracker[3],
-            fleetTracker[4],
-            fleetTracker[5]
+            toCitadel
         );
 
         return (dkToTransfer / 10);

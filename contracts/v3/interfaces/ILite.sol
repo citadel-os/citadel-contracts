@@ -2,13 +2,15 @@
 pragma solidity ^0.8.24;
 
 interface ILite {
-    function liteGrid(
+    function liteCitadel(
+        uint256 _citadelId,
+        uint256 _nodeId,
+        uint8 _factionId
+    ) external;
+    function litePilot(
         uint256 _citadelId,
         uint256[3] calldata _pilotIds,
-        uint256 _nodeId,
-        uint8 _factionId,
-        uint8 _orbitHeight,
-        bytes32[] calldata proof
+        uint8 _factionId
     ) external;
     function trainFleet(
         uint256 _citadelId, 

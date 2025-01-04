@@ -7,44 +7,36 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 
 contract CitadelLite is DiamondStorage, Ownable, ILite, ReentrancyGuard {
     IERC20 public immutable drakma;
+    IERC721 public immutable citadelCollection;
+    IERC721 public immutable pilotCollection;
 
     uint256 sifGattacaPrice = 20000000000000000000;
     uint256 mhrudvogThrotPrice = 40000000000000000000;
     uint256 drebentraakhtPrice = 800000000000000000000;
 
     constructor(
-        IERC20 _drakmaAddress
+        IERC20 _drakmaAddress,
+        IERC721 _citadelCollection, 
+        IERC721 _pilotCollection
     ) {
         drakma = _drakmaAddress;
+        citadelCollection = _citadelCollection;
+        pilotCollection = _pilotCollection;
     }
 
-    function liteGrid(
-        uint256 _citadelId,
-        uint256[3] calldata _pilotIds,
-        uint256 _nodeId,
-        uint8 _factionId,
-        uint8 _orbitHeight,
-        bytes32[] calldata proof
-    ) external nonReentrant {
-        require(_nodeId <= maxNode && _nodeId != 0, "invalid node");
-        require(verifyOwnership(msg.sender, _citadelId, proof, true) == true, "caller does not own citadel");
-        require(!node[_nodeId].isLit, "Node already lit");
+    function orbitCitadel(uint256 _citadelId, uint8 _orbitHeight) external nonReentrant {
+        require(
+            citadelCollection.ownerOf(_citadelId) == msg.sender,
+            "must own citadel"
+        );
 
-        for (uint256 i; i < _pilotIds.length; ++i) {
-            if (_pilotIds[i] != 0) {
-                require(verifyOwnership(msg.sender, _pilotIds[i], proof, false) == true, "caller does not own pilot");
-                require(!pilot[_pilotIds[i]], "Pilot already used");
-                pilot[_pilotIds[i]] = true;
-            }
-        }
+        require(citadelNode[_citadelId].timeLit != 0, "Citadel not lit");
 
-        require(citadelNode[_citadelId].timeLit == 0, "Citadel already lit");
-
-        // Transfer Drakma based on orbit height
         uint256 drakmaAmount;
         if (_orbitHeight == 1) {
             drakmaAmount = 1_000_000 * 10 ** 18;
@@ -67,19 +59,83 @@ contract CitadelLite is DiamondStorage, Ownable, ILite, ReentrancyGuard {
             );
         }
 
+        citadelNode[_citadelId].orbitHeight = _orbitHeight;
+    }
+
+    function liteCitadel(
+        uint256 _citadelId,
+        uint256 _nodeId,
+        uint8 _factionId
+    ) external nonReentrant {
+        require(_nodeId <= maxNode && _nodeId != 0, "invalid node");
+        require(!node[_nodeId].isLit, "Node already lit");
+        require(
+            citadelCollection.ownerOf(_citadelId) == msg.sender,
+            "must own citadel"
+        );
+
+        require(citadelNode[_citadelId].timeLit == 0, "Citadel already lit");
+
         citadelNode[_citadelId] = CitadelNode(
             _nodeId,
             0,
             block.timestamp,
             0,
             0,
-            _pilotIds,
+            [uint256(0), 0, 0],
             _factionId,
-            _orbitHeight,
+            5,
             0
         );
 
         node[_nodeId] = Node(node[_nodeId].gridId, true, _citadelId);
+    }
+
+    function litePilot(
+        uint256 _citadelId,
+        uint256[3] calldata _pilotIds,
+        uint8 _factionId
+    ) external nonReentrant {
+        if (citadelNode[_citadelId].timeLit > 0) {
+            require(
+                citadelCollection.ownerOf(_citadelId) == msg.sender,
+                "must own citadel"
+            );
+            require(
+                citadelNode[_citadelId].faction == _factionId,
+                "must lite to the same faction"
+            );
+        }
+
+        for (uint256 i; i < _pilotIds.length; ++i) {
+            if (_pilotIds[i] != 0) {
+                require(
+                    pilotCollection.ownerOf(_pilotIds[i]) == msg.sender,
+                    "must own pilot"
+                );
+                require(!pilot[_pilotIds[i]], "Pilot already used");
+                pilot[_pilotIds[i]] = true;
+            }
+        }
+
+        if (citadelNode[_citadelId].timeLit == 0) {
+            uint256 nodeId = getNodeFromCitadel(_citadelId);
+            citadelNode[_citadelId] = CitadelNode(
+                nodeId,
+                0,
+                block.timestamp,
+                0,
+                0,
+                _pilotIds,
+                _factionId,
+                5,
+                0
+            );
+
+            node[nodeId] = Node(node[nodeId].gridId, true, _citadelId);
+        } else {
+            citadelNode[_citadelId].pilot = _pilotIds;
+        }
     }
 
     function trainFleet(uint256 _citadelId, uint256 _sifGattaca, uint256 _mhrudvogThrot, uint256 _drebentraakht) external nonReentrant {
@@ -92,7 +148,7 @@ contract CitadelLite is DiamondStorage, Ownable, ILite, ReentrancyGuard {
             "cannot train"
         );
 
-            // allocate 100 sifGattaca on first train
+        // allocate 100 sifGattaca on first train
         if(!fleet[_citadelId].isValue) {
             fleet[_citadelId].stationedFleet.sifGattaca = 100;
             fleet[_citadelId].isValue = true;
