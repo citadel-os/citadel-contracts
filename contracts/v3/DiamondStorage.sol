@@ -1,29 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/ICombatEngine.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-contract DiamondStorage {
-    uint256 maxCitadel = 1024;
-    uint256 maxNode = 1024;
-    uint256 claimInterval = 64 days;
-    uint256 gameStart;
-    uint8 pilotMultiple = 20;
-    uint8 levelMultiple = 2;
-    uint256 public gridTraversalTime = 30 minutes;
-    uint256 sifGattacaTrainingTime = 5 minutes;
-    uint256 mhrudvogThrotTrainingTime = 15 minutes;
-    uint256 drebentraakhtTrainingTime = 1 hours;
-    uint256 siegeMaxExpiry = 24 hours;
+/**
+ * @dev This library holds all of the "game" state for your Citadel app.
+ * Each facet uses `DiamondStorage.diamondStorage()` to read and write.
+ */
+library DiamondStorage {
+    bytes32 constant GAME_STORAGE_POSITION = keccak256("citadel.game.storage.v1");
 
-    event CitadelEvent(
-        uint256 citadelId
-    );
-
-    event CitadelActionEvent(
-        uint256 fromCitadelId, 
-        uint256 toCitadelId
-    );
-
+    // ---------------------
+    //     Structs
+    // ---------------------
     struct Node {
         uint256 gridId;
         bool isLit;
@@ -77,46 +68,48 @@ contract DiamondStorage {
         uint256 defensiveDrebentraakhtDestroyed;
     }
 
-    mapping(uint256 => Node) node; // index is _nodeId
-    mapping(uint256 => CitadelNode) citadelNode; // index is _citadelId
-    mapping(uint256 => FleetAcademy) fleet; // index is _citadelId
-    mapping(uint256 => FleetReinforce) reinforcements; // index is _fromCitadelId
-    mapping(uint256 => bool) pilot; // index is _pilotId, value isLit
-    mapping(uint256 => uint256) nodeMultiple; // index is _nodeId
-    mapping(uint256 => Siege) siege; // index is _fromCitadelId
+    struct GameStorage {
+        // Basic game parameters
+        uint256 maxCitadel;
+        uint256 maxNode;
+        uint256 claimInterval;
+        uint256 gameStart;
+        uint8 pilotMultiple;
+        uint8 levelMultiple;
+        uint256 gridTraversalTime;
+        uint256 sifGattacaTrainingTime;
+        uint256 mhrudvogThrotTrainingTime;
+        uint256 drebentraakhtTrainingTime;
+        uint256 siegeMaxExpiry;
 
+        // References to external contracts
+        IERC20 drakma;
+        ICombatEngine combatEngine;
+        IERC721 citadelCollection;
+        IERC721 pilotCollection;
 
-    function getGridFromNode(uint256 _nodeId) internal pure returns (uint256) {
-        uint256 gridId = (_nodeId - 1) / 8 + 1;
-        return gridId;
+        // "Carry" values for each fleet type
+        uint256 sifGattacaCary;
+        uint256 mhrudvogThrotCary;
+        uint256 drebentraakhtCary;
+
+        // Actual game data
+        mapping(uint256 => Node) node; 
+        mapping(uint256 => CitadelNode) citadelNode;
+        mapping(uint256 => FleetAcademy) fleet;
+        mapping(uint256 => FleetReinforce) reinforcements;
+        mapping(uint256 => bool) pilot;
+        mapping(uint256 => uint256) nodeMultiple;
+        mapping(uint256 => Siege) siege;
     }
 
-
-    function getNodeFromCitadel(uint256 _citadelId) internal view returns (uint256) {
-        if(citadelNode[_citadelId].timeLit == 0) {
-            if (_citadelId % 2 == 0) {
-                return _citadelId / 2;
-            } else {
-                return 1024 - (_citadelId / 2);
-            }
-        } else {
-            return citadelNode[_citadelId].nodeId;
-        }
-    }
-
-    // diamond storage functionality
-    struct FacetAddresses {
-        mapping(bytes4 => address) addresses;
-    }
-
-    function diamondStorage() internal pure returns (FacetAddresses storage ds) {
-        bytes32 position = keccak256("diamond.standard.diamond.storage");
+    /**
+     * @dev Returns a pointer to the app's GameStorage struct in contract storage.
+     */
+    function diamondStorage() internal pure returns (GameStorage storage ds) {
+        bytes32 position = GAME_STORAGE_POSITION;
         assembly {
             ds.slot := position
         }
     }
-
-
-
-
 }
