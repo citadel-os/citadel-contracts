@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./DiamondStorage.sol";
 import "./interfaces/ICombat.sol";
-import "./interfaces/ICombatEngine.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -21,24 +20,6 @@ contract CitadelCombat is ICombat, ReentrancyGuard {
     // ------------------------------------------
     event CitadelEvent(uint256 citadelId);
     event CitadelActionEvent(uint256 fromCitadelId, uint256 toCitadelId);
-
-    // ------------------------------------------
-    // Facet initializer (replaces constructor)
-    // ------------------------------------------
-    function initCombatFacet(
-        address _drakmaAddress,
-        address _combatEngineAddress,
-        uint256 _sifGattacaCarry,
-        uint256 _mhrudvogThrotCarry,
-        uint256 _drebentraakhtCarry
-    ) external override {
-        DiamondStorage.GameStorage storage ds = DiamondStorage.diamondStorage();
-        ds.drakma = IERC20(_drakmaAddress);
-        ds.combatEngine = ICombatEngine(_combatEngineAddress);
-        ds.sifGattacaCary = _sifGattacaCarry;
-        ds.mhrudvogThrotCary = _mhrudvogThrotCarry;
-        ds.drebentraakhtCary = _drebentraakhtCarry;
-    }
 
     // ------------------------------------------
     // Public (external) Combat Functions

@@ -17,15 +17,4 @@ interface ICombat {
      */
     function resolveSiege(uint256 _fromCitadel) external;
 
-    /**
-     * @dev Optional: Provide an initializer to set up addresses & carry values
-     *      or any other public functions you'd like from the combat facet.
-     */
-    function initCombatFacet(
-        address _drakmaAddress,
-        address _combatEngineAddress,
-        uint256 _sifGattacaCarry,
-        uint256 _mhrudvogThrotCarry,
-        uint256 _drebentraakhtCarry
-    ) external;
 }

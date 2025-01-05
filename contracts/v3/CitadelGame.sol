@@ -9,6 +9,7 @@ import "./DiamondLib.sol";
 import "./interfaces/ILite.sol";
 import "./interfaces/IAdmin.sol";
 import "./interfaces/ICombat.sol";
+import "./interfaces/ICombatEngine.sol";
 
 /**
  * @dev The Diamond (proxy) contract for the Citadel game.
@@ -17,7 +18,8 @@ contract CitadelGame is Ownable {
     constructor(
         address liteAddress,
         address adminAddress,
-        address combatAddress
+        address combatAddress,
+        address combatEngineAddress
     ) {
         // 1. Initialize base storage
         DiamondStorage.GameStorage storage ds = DiamondStorage.diamondStorage();
@@ -32,6 +34,12 @@ contract CitadelGame is Ownable {
         ds.mhrudvogThrotTrainingTime = 15 minutes;
         ds.drebentraakhtTrainingTime = 1 hours;
         ds.siegeMaxExpiry = 24 hours;
+        ds.sifGattacaCary = 10000000000000000000;
+        ds.mhrudvogThrotCary = 2000000000000000000;
+        ds.drebentraakhtCary = 400000000000000000000;
+
+        // Initialize interfaces
+        ds.combatEngine = ICombatEngine(combatEngineAddress);
 
         // 2. Build a list of facets & function selectors
         //    - Lite
@@ -91,5 +99,7 @@ contract CitadelGame is Ownable {
     fallback() external payable {
         DiamondLib.delegateCall(msg.sig);
     }
+
+    receive() external payable {}
 }
 
